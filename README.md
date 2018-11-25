@@ -1,1 +1,1 @@
-# life-server
+# LifeServer
