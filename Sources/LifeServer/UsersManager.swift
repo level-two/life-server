@@ -42,7 +42,10 @@ public class UsersManager {
         // Store lastUserId and registeredUserss
     }
     
-    public func createUser(withName name:String, withColor color:Color) -> User {
+    public func createUser(withName name:String, withColor color:Color) -> User? {
+        // return nil if user with this name exists
+        guard let _ = registeredUsers.first(where:{ $0.name == name }) else { return nil }
+        
         let userId = lastUserId
         self.lastUserId += 1
         
@@ -51,4 +54,8 @@ public class UsersManager {
         return user
     }
     
+    public func loginUser(withName name:String) -> User? {
+        let user = registeredUsers.first(where:{ $0.name == name })
+        return user
+    }
 }

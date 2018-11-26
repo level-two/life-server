@@ -15,22 +15,31 @@
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
-import Foundation
-
-public protocol SessionManagerDelegate {
-    func gotMessage(forUser userId:Int, msg:String)
-    //func anonymousConnectionEstablished()
-    func userLoggedIn(_ userId:Int)
-    func userLoggedOut(_ userId:Int)
-}
-
-public class SessionManager : ServerDelegate {
-    let json = """
-{
+/*
+ Expected JSON messages format
+ 
+ For Login:
+ {
     "login": {
         "userName" : "name"
     }
-
+ }
+ 
+ responses:
+ {
+     "status": true,
+     "userId": "\(user.userId)",
+     "message": "User \(user.name) logged in sucessfully"
+ }
+ 
+ {
+    "status": false,
+    "message": "Failed to login"
+ }
+ 
+ 
+ For user creation:
+ {
     "create": {
         "userName" : "name",
         "color" : {
@@ -39,77 +48,107 @@ public class SessionManager : ServerDelegate {
             "b" : 255
         }
     }
+ }
+ 
+ responses:
+ {
+    "status": true,
+    "userId": "\(user.userId)",
+    "message": "User \(user.name) created sucessfully"
+ }
+ 
+ {
+    "status": false,
+    "message": "Failed to create new user"
+ }
+*/
+
+import Foundation
+
+protocol SessionManagerDelegate {
+    func gotMessage(forUser userId:Int, msg:[String:Any])
+    //func anonymousConnectionEstablished()
+    func userLoggedIn(_ userId:Int)
+    func userLoggedOut(_ userId:Int)
 }
-"""
-    
-    weak var server: Server?
-    weak var usersManager: UsersManager?
+
+class SessionManager : ServerDelegate {
     public var delegate = MulticastDelegate<SessionManagerDelegate>()
     
+    private weak var server: Server?
+    private weak var usersManager: UsersManager?
     private var userIdForConnectionId = [Int:Int]()
+    private let kNoUserId = -1
     
+    // MARK: Public methods
     init(withServer server:Server, usersManager:UsersManager) {
         self.server = server
         self.server!.delegate.add(delegate:self)
         self.usersManager = usersManager
     }
     
-    
-    
-    public func sendMessageBroadcast(msg:String) {
-        
+    public func sendMessageBroadcast(dic:[String:Any]) {
+        for connectionId in userIdForConnectionId.keys {
+            server?.sendMessage(usingConnection: connectionId, dic: dic)
+        }
     }
     
-    public func sendMessageToUser(_ userId:Int, msg:String) {
-        
+    public func sendMessageToUser(_ userId:Int, dic:[String:Any]) {
+        guard let connectionId = userIdForConnectionId.first(where:{$1==userId})?.key else { return }
+        server?.sendMessage(usingConnection: connectionId, dic: dic)
     }
     
     // MARK: ConnectionDelegate implementation
-    func onConnectionEstablished(withId connectionId:Int) {
+    public func onConnectionEstablished(withId connectionId:Int) {
         // Create anonymous session
+        userIdForConnectionId[connectionId] = kNoUserId
     }
     
-    func onConnection(withId connectionId:Int, received message:[String:Any]) {
+    public func onConnection(withId connectionId:Int, received message:[String:Any]) {
         if let createDic = message["create"] as? [String:Any] {
-            if let user = tryCreateUser(withDic:createDic) {
+            if let user = createUser(withDic:createDic) {
                 let userId = user.userId
+                userIdForConnectionId[connectionId] = userId
                 // Notify client
-                server!.sendMessage(usingConnection:connectionId, dic:msgDicForUserCreated(user))
+                server?.sendMessage(usingConnection:connectionId, dic:msgDicForUserCreated(user))
                 // Notify delegates
                 delegate.invoke { $0.userLoggedIn(userId) }
-                
             }
             else {
+                userIdForConnectionId[connectionId] = kNoUserId
                 // Notify client about error
-                server!.sendMessage(usingConnection:connectionId, dic:msgDicForUserCreationError())
+                server?.sendMessage(usingConnection:connectionId, dic:["status": false, "message": "Failed to create new user"])
             }
         }
         else if let loginDic = message["login"] as? [String:Any] {
-            guard let user = usersManager.getUser(withName:name) else { return }
-            let userId = user.userId
-            
-            delegate.invoke { $0.userLoggedIn(userId) }
+            if let user = loginUser(withDic:loginDic) {
+                let userId = user.userId
+                userIdForConnectionId[connectionId] = userId
+                // Notify client
+                server?.sendMessage(usingConnection:connectionId, dic:msgDicForUserLoggedIn(user))
+                // Notify delegates
+                delegate.invoke { $0.userLoggedIn(userId) }
+            }
+            else {
+                userIdForConnectionId[connectionId] = kNoUserId
+                // Notify client about error
+                server?.sendMessage(usingConnection:connectionId, dic:["status": false, "message": "Failed to login"])
+            }
         }
-        else if let userId = getAssociatedUserId(forConnection:connectionId) {
+        else if let userId = userIdForConnectionId[connectionId] {
             delegate.invoke { $0.gotMessage(forUser: userId, msg: message) }
         }
-        
-        // Try read LOGIN or CREATE message
-        // Bind connectionId to UserId
-        // If session is already established, pass the message further
     }
     
-    func onConnectionClosed(withId connectionId:Int) {
-        if let userId = getAssociatedUserId(forConnection:connectionId) {
+    public func onConnectionClosed(withId connectionId:Int) {
+        if let userId = userIdForConnectionId[connectionId] {
+            userIdForConnectionId.removeValue(forKey:connectionId)
             delegate.invoke { $0.userLoggedOut(userId) }
         }
     }
     
-    func getAssociatedUserId(forConnection connectionId:Int) -> Int? {
-        return userIdForConnectionId[connectionId]
-    }
-    
-    func tryCreateUser(withDic dic:[String:Any]) -> User? {
+    // MARK: Private functions
+    private func createUser(withDic dic:[String:Any]) -> User? {
         guard
             let name = dic["userName"] as? String,
             let colorDic = dic["color"] as? [String:Any],
@@ -117,11 +156,10 @@ public class SessionManager : ServerDelegate {
             let g = colorDic["g"] as? Int,
             let b = colorDic["b"] as? Int
             else { return nil }
-        
         return usersManager!.createUser(withName:name, withColor:Color(r:r, g:g, b:b))
     }
     
-    func msgDicForUserCreated(user:User) -> [String:Any] {
+    private func msgDicForUserCreated(_ user:User) -> [String:Any] {
         return [
             "status": true,
             "userId": "\(user.userId)",
@@ -129,10 +167,16 @@ public class SessionManager : ServerDelegate {
         ]
     }
     
-    func msgDicForUserCreationError() -> [String:Any] {
+    private func loginUser(withDic dic:[String:Any]) -> User? {
+        guard let name = dic["userName"] as? String else { return nil }
+        return usersManager!.loginUser(withName:name)
+    }
+    
+    private func msgDicForUserLoggedIn(_ user:User) -> [String:Any] {
         return [
-            "status": false,
-            "message": "Failed to create new user"
+            "status": true,
+            "userId": "\(user.userId)",
+            "message": "User \(user.name) logged in sucessfully"
         ]
     }
 }

@@ -21,7 +21,7 @@ import Dispatch
 
 protocol ServerDelegate {
     func onConnectionEstablished(withId connectionId:Int)
-    func onConnection(withId connectionId:Int, received message:Data)
+    func onConnection(withId connectionId:Int, received message:[String:Any])
     func onConnectionClosed(withId connectionId:Int)
 }
 
