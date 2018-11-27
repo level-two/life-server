@@ -29,18 +29,21 @@ class Server {
     let bufferSize = 4096
     let port: Int
     var listenSocket: Socket? = nil
-    var connectedSockets = [Int32: Socket]()
+    var connectedSockets: [Socket]
     let socketLockQueue = DispatchQueue(label: "com.yauheni-lychkouski.life-server.socketLockQueue", attributes:.concurrent)
-    
+    //var stopTasks: Bool
+    //var isListeningTaskRunning: Bool
+    //var isConnectionTaskRunning: Bool
     public var delegate = MulticastDelegate<ServerDelegate>()
     
     init(port: Int) {
         self.port = port
+        self.connectedSockets = []
     }
     
     deinit {
         // Close all open sockets...
-        shutdownServer()
+        //shutdownServer()
     }
     
     func serverRunloop() {
@@ -49,49 +52,38 @@ class Server {
             do {
                 // Create an IPV4 socket...
                 try self.listenSocket = Socket.create(family: .inet)
-                
                 guard let socket = self.listenSocket else {
-                    print("Unable to unwrap socket...")
+                    print("Failed to create listening socket...")
                     return
+                }
+                
+                defer {
+                    self.listenSocket?.close()
+                    self.listenSocket = nil
                 }
                 
                 try socket.listen(on: self.port)
                 print("Listening on port: \(socket.listeningPort)")
                 
-                repeat {
-                    do {
-                        let newSocket = try socket.acceptClientConnection()
-                        
-                        print("Accepted connection from: \(newSocket.remoteHostname) on port \(newSocket.remotePort)")
-                        print("Socket Signature: \(String(describing: newSocket.signature?.description))")
-                        
-                        // Add the new socket to the list of connected sockets...
-                        self.addSocket(socket:newSocket)
-                        self.serveConnection(socket:newSocket)
-                        self.delegate.invoke { $0.onConnectionEstablished(withId:Int(socket.socketfd)) }
-                    }
-                    catch let error {
-                        guard let socketError = error as? Socket.Error else {
-                            print("Unexpected error...")
-                            print(error)
-                        }
-                        
-                        print("Error reported:\n \(socketError.description)")
-                    }
-                } while true
+                while true { // self.isServerRunning {
+                    let newSocket = try socket.acceptClientConnection()
+                    
+                    print("Accepted connection from: \(newSocket.remoteHostname) on port \(newSocket.remotePort)")
+                    print("Socket Signature: \(String(describing: newSocket.signature?.description))")
+                    
+                    // Add the new socket to the list of connected sockets...
+                    self.addSocket(socket:newSocket)
+                    self.delegate.invoke { $0.onConnectionEstablished(withId:Int(newSocket.socketfd)) }
+                }
             }
             catch let error {
-                guard let socketError = error as? Socket.Error else {
-                    print("Unexpected error...")
-                    print(error)
+                if let socketError = error as? Socket.Error {
+                    print("Error reported: \(socketError.description)")
                 }
-                
-                print("Error reported:\n \(socketError.description)")
+                else {
+                    print("Unexpected error: \(error)")
+                }
             }
-        }
-        
-        DispatchQueue.main.sync {
-            exit(0)
         }
     }
     
@@ -104,16 +96,20 @@ class Server {
     
     
     
-    func serveConnection(socket: Socket) {
+    func serveConnections() {
         
         // Get the global concurrent queue...
         let queue = DispatchQueue.global(qos: .default)
         
         // Create the run loop work item and dispatch to the default priority global queue...
-        queue.async { [unowned self, socket] in
-            var shouldKeepRunning = true
+        queue.async { [unowned self] in
             var readData = Data(capacity: self.bufferSize)
             do {
+                // get sockets list copy
+                let connectedSockets = self.getConnectedSockets()
+                let (readableSockets, writeableSockets) = try Socket.checkStatus(for: connectedSockets)
+                
+                
                 try socket.write(from: "Hello, type 'QUIT' to end session\nor 'SHUTDOWN' to stop server.\n")
                 
                 let bytesRead = try socket.read(into: &readData)
@@ -135,10 +131,7 @@ class Server {
                 
                 print("Socket: \(socket.remoteHostname):\(socket.remotePort) closed...")
                 socket.close()
-                
-                self.socketLockQueue.sync { [unowned self, socket] in
-                    self.connectedSockets[socket.socketfd] = nil
-                }
+                // remove socket
             }
             catch let error {
                 guard let socketError = error as? Socket.Error else {
@@ -148,6 +141,9 @@ class Server {
                 
                 print("Error reported by connection at \(socket.remoteHostname):\(socket.remotePort):\n \(socketError.description)")
             }
+            
+            
+            
         }
     }
     
@@ -160,31 +156,31 @@ class Server {
     func addSocket(socket:Socket) {
         // Add the new socket to the list of connected sockets...
         socketLockQueue.async(flags: .barrier) { [unowned self, socket] in
-            self.connectedSockets[socket.socketfd] = socket
+            self.connectedSockets.append(socket)
         }
     }
     
     func removeSocket(socket:Socket) {
-        self.socketLockQueue.async(flags: .barrier) { [unowned self, socket] in
-            self.connectedSockets.removeValue(forKey: socket.socketfd)
+        self.socketLockQueue.async(flags: .barrier) { [unowned self, socket] in {
+            self.connectedSockets.removeAll(where: { $0 == socket })
         }
     }
     
     func closeAllSockets() {
         self.socketLockQueue.async(flags: .barrier) { [unowned self] in {
-            for socket in self.connectedSockets.values {
+            for socket in self.connectedSockets {
                 socket.close()
             }
-            self.connectedSockets = [:]
+            self.connectedSockets = []
         }
     }
     
-    func getSocket(socketfd:Int32) -> Socket? {
-        var socket: Socket? = nil
+    func getConnectedSockets() -> [Socket]? {
+        var sockets: [Socket]?
         socketLockQueue.sync { [unowned self] in
-            socket = self.connectedSockets[socketfd]
+            sockets = self.connectedSockets
         }
-        return socket
+        return sockets
     }
     
     func shutdownServer() {
