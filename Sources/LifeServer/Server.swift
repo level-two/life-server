@@ -25,30 +25,66 @@ protocol ServerDelegate {
     func onConnectionClosed(withId connectionId:Int)
 }
 
+class ThreadSafeHelper {
+    private let lockQueue: DispatchQueue
+    
+    init(withQueueName queueName:String) {
+        lockQueue = DispatchQueue(label: queueName, attributes:.concurrent)
+    }
+    
+    public func performAsyncConcurrent(closure:@escaping ()->Void) {
+        lockQueue.async { closure() }
+    }
+    
+    public func performSyncConcurrent(closure:@escaping ()->Void) {
+        lockQueue.sync { closure() }
+    }
+    
+    public func performAsyncBarrier(closure:@escaping ()->Void) {
+        lockQueue.async(flags: .barrier)  { closure() }
+    }
+    
+    public func performSyncBarrier(closure:@escaping ()->Void) {
+        lockQueue.sync(flags: .barrier)  { closure() }
+    }
+}
+
 class Server {
     let bufferSize = 4096
     let port: Int
     var listenSocket: Socket? = nil
     var connectedSockets: [Socket]
-    let socketLockQueue = DispatchQueue(label: "com.yauheni-lychkouski.life-server.socketLockQueue", attributes:.concurrent)
-    //var stopTasks: Bool
-    //var isListeningTaskRunning: Bool
-    //var isConnectionTaskRunning: Bool
+    
+    var messagesToSend = [Int32:[Data]]()
+    
+    var stopTasks: Bool
+    var isListeningTaskFinished: Bool
+    var isConnectionTaskFinished: Bool
+    
+    let threadSafe = ThreadSafeHelper(withQueueName: "com.yauheni-lychkouski.life-server.socketLockQueue")
     public var delegate = MulticastDelegate<ServerDelegate>()
     
     init(port: Int) {
         self.port = port
         self.connectedSockets = []
+        
+        stopTasks = false
+        isListeningTaskFinished = false
+        isConnectionTaskFinished = false
     }
     
     deinit {
         // Close all open sockets...
-        //shutdownServer()
+        shutdownServer()
     }
     
     func serverRunloop() {
+        self.isListeningTaskFinished = true
+        
         let queue = DispatchQueue.global(qos: .userInteractive)
         queue.async { [unowned self] in
+            self.isListeningTaskFinished = false
+            
             do {
                 // Create an IPV4 socket...
                 try self.listenSocket = Socket.create(family: .inet)
@@ -65,18 +101,31 @@ class Server {
                 try socket.listen(on: self.port)
                 print("Listening on port: \(socket.listeningPort)")
                 
-                while true { // self.isServerRunning {
-                    let newSocket = try socket.acceptClientConnection()
+                while !self.stopTasks {
+                    var newSocket: Socket
+                    do {
+                        newSocket = try socket.acceptClientConnection()
+                    }
+                    catch {
+                        print("Failed to accept client connection: \(error)")
+                        continue
+                    }
+                    
+                    try newSocket.setBlocking(mode: false)
                     
                     print("Accepted connection from: \(newSocket.remoteHostname) on port \(newSocket.remotePort)")
                     print("Socket Signature: \(String(describing: newSocket.signature?.description))")
                     
                     // Add the new socket to the list of connected sockets...
-                    self.addSocket(socket:newSocket)
+                    
+                    self.threadSafe.performAsyncBarrier { [unowned self, newSocket] in
+                        self.connectedSockets.append(newSocket)
+                    }
+                    
                     self.delegate.invoke { $0.onConnectionEstablished(withId:Int(newSocket.socketfd)) }
                 }
             }
-            catch let error {
+            catch {
                 if let socketError = error as? Socket.Error {
                     print("Error reported: \(socketError.description)")
                 }
@@ -84,110 +133,140 @@ class Server {
                     print("Unexpected error: \(error)")
                 }
             }
+            
+            self.isListeningTaskFinished = true
         }
     }
     
-    // On Connection:
-    // - Create socket with uid and start listening for incoming data in separate thread
-    // - catch read events and notify delegates
-    // - catch connection closing, errors or timeout and close and remove socket from list
-    // - perform write on demand (should it be blocking or non-blocking? error handling?)
-    
-    
-    
-    
     func serveConnections() {
+        isConnectionTaskFinished = true
         
         // Get the global concurrent queue...
         let queue = DispatchQueue.global(qos: .default)
         
         // Create the run loop work item and dispatch to the default priority global queue...
         queue.async { [unowned self] in
-            var readData = Data(capacity: self.bufferSize)
-            do {
+            self.isConnectionTaskFinished = false
+            
+            while !self.stopTasks {
+                var readData = Data(capacity: self.bufferSize)
+                
                 // get sockets list copy
-                let connectedSockets = self.getConnectedSockets()
-                let (readableSockets, writeableSockets) = try Socket.checkStatus(for: connectedSockets)
+                var connectedSockets = [Socket]()
                 
+                self.threadSafe.performSyncBarrier { [unowned self] in
+                    self.connectedSockets.filter({ $0.remoteConnectionClosed }).forEach({ $0.close() })
+                    self.connectedSockets.removeAll(where: { $0.remoteConnectionClosed } )
+                    
+                    connectedSockets = self.connectedSockets
+                }
                 
-                try socket.write(from: "Hello, type 'QUIT' to end session\nor 'SHUTDOWN' to stop server.\n")
+                // Check connection status here
+                let (readableSockets, writeableSockets) : ([Socket], [Socket])
+                do {
+                    (readableSockets, writeableSockets) = try Socket.checkStatus(for: connectedSockets)
+                }
+                catch {
+                    print("Failed to check sockets statuses: \(error)")
+                    continue
+                }
                 
-                let bytesRead = try socket.read(into: &readData)
-                if bytesRead > 0 {
-                    guard let response = String(data: readData, encoding: .utf8) else {
-                        print("Error decoding response...")
-                        readData.count = 0
-                        break
+                for socket in readableSockets {
+                    var bytesRead = 0
+                    do {
+                        bytesRead = try socket.read(into: &readData)
                     }
-                    if response.hasPrefix(EchoServer.shutdownCommand) {
-                        print("Shutdown requested by connection at \(socket.remoteHostname):\(socket.remotePort)")
-                        // Shut things down...
-                        self.shutdownServer()
-                        return
+                    catch {
+                        print("Failed read data from the socket: \(error)")
+                        continue
                     }
                     
-                    print("Server received from connection at \(socket.remoteHostname):\(socket.remotePort): \(response) ")
+                    if bytesRead > 0 {
+                        var dic: [String: Any]?
+                        
+                        do {
+                            dic = try JSONSerialization.jsonObject(with: readData, options: []) as? [String:Any]
+                        } catch {
+                            print("Failed to decode JSON: \(error)")
+                            print("Received data: \(String(data:readData, encoding:.utf8) ?? "nil")")
+                            continue
+                        }
+                        
+                        if let msgDic = dic {
+                            self.delegate.invoke { $0.onConnection(withId:Int(socket.socketfd), received:msgDic) }
+                        }
+                    }
                 }
                 
-                print("Socket: \(socket.remoteHostname):\(socket.remotePort) closed...")
-                socket.close()
-                // remove socket
-            }
-            catch let error {
-                guard let socketError = error as? Socket.Error else {
-                    print("Unexpected error by connection at \(socket.remoteHostname):\(socket.remotePort)...")
-                    return
+                self.threadSafe.performSyncBarrier { [unowned self] in
+                    var keysForDelete = [Int32]()
+                    
+                    for (socketfd, messages) in self.messagesToSend {
+                        guard let socket = writeableSockets.first(where: { $0.socketfd == socketfd }),
+                            let data = messages.first
+                            else { continue }
+                        
+                        do {
+                            try socket.write(from:data)
+                        }
+                        catch let error {
+                            print("Failed to send message to the socket \(socketfd): \(error)")
+                        }
+                        
+                        if (messages.count <= 1) {
+                            keysForDelete.append(socketfd)
+                        }
+                        else {
+                            self.messagesToSend[socketfd]?.removeFirst()
+                        }
+                    }
+                    
+                    for key in keysForDelete {
+                        self.messagesToSend.removeValue(forKey: key)
+                    }
                 }
-                
-                print("Error reported by connection at \(socket.remoteHostname):\(socket.remotePort):\n \(socketError.description)")
             }
-            
-            
-            
+           
+            self.isConnectionTaskFinished = true
         }
     }
     
-    public func sendMessage(usingConnection connectionId:Int, dic:[String:Any]) {
-        print("TODO")
-    }
-    
-    
-    
-    func addSocket(socket:Socket) {
-        // Add the new socket to the list of connected sockets...
-        socketLockQueue.async(flags: .barrier) { [unowned self, socket] in
-            self.connectedSockets.append(socket)
+    public func sendMessage(usingConnection connectionId:Int32, dic:[String:Any]) {
+        var jsonData : Data?
+        do {
+            jsonData = try JSONSerialization.data(withJSONObject: dic, options: .prettyPrinted)
         }
-    }
-    
-    func removeSocket(socket:Socket) {
-        self.socketLockQueue.async(flags: .barrier) { [unowned self, socket] in {
-            self.connectedSockets.removeAll(where: { $0 == socket })
+        catch {
+            print("Failed to serialize dictionary to JSON data: \(error)")
         }
-    }
-    
-    func closeAllSockets() {
-        self.socketLockQueue.async(flags: .barrier) { [unowned self] in {
-            for socket in self.connectedSockets {
-                socket.close()
+        
+        guard let data = jsonData else { return }
+        
+        self.threadSafe.performAsyncBarrier { [unowned self, connectionId, data] in
+            if self.messagesToSend[connectionId] != nil {
+                self.messagesToSend[connectionId]!.append(data)
             }
-            self.connectedSockets = []
+            else {
+                self.messagesToSend[connectionId] = [data]
+            }
         }
-    }
-    
-    func getConnectedSockets() -> [Socket]? {
-        var sockets: [Socket]?
-        socketLockQueue.sync { [unowned self] in
-            sockets = self.connectedSockets
-        }
-        return sockets
     }
     
     func shutdownServer() {
         print("Shutting donw server")
         
+        self.stopTasks = true
+        
+        while (!self.isListeningTaskFinished && !self.isConnectionTaskFinished) {
+            print("Waiting for all tasks to be finished")
+            usleep(10000)
+        }
+        
         // Close all open sockets...
-        self.closeAllSockets()
+        self.threadSafe.performSyncBarrier { [unowned self] in
+            self.connectedSockets.forEach({ $0.close() })
+            self.connectedSockets = []
+        }
         listenSocket?.close()
     }
 }
