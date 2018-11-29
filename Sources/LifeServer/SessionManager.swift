@@ -76,6 +76,11 @@ protocol SessionManagerDelegate {
     func userLoggedOut(_ userId:Int)
 }
 
+public enum SessionManagerError : Error {
+    case invalidUserCreateRequest
+    case invalidUserLoginRequest
+}
+
 class SessionManager : ServerDelegate {
     public var delegate = MulticastDelegate<SessionManagerDelegate>()
     
@@ -87,7 +92,7 @@ class SessionManager : ServerDelegate {
     // MARK: Public methods
     init(withServer server:Server, usersManager:UsersManager) {
         self.server = server
-        self.server!.delegate.add(delegate:self)
+        self.server?.delegate.add(delegate:self)
         self.usersManager = usersManager
     }
     
@@ -110,33 +115,39 @@ class SessionManager : ServerDelegate {
     
     public func onConnection(withId connectionId:Int32, received message:[String:Any]) {
         if let createDic = message["create"] as? [String:Any] {
-            if let user = createUser(withDic:createDic) {
+            do {
+                guard let user = try createUser(withDic:createDic) else { return }
+                
                 let userId = user.userId
                 userIdForConnectionId[connectionId] = userId
+                
                 // Notify client
                 server?.sendMessage(usingConnection:connectionId, dic:msgDicForUserCreated(user))
                 // Notify delegates
                 delegate.invoke { $0.userLoggedIn(userId) }
             }
-            else {
-                userIdForConnectionId[connectionId] = kNoUserId
+            catch {
+                print("Failed to create user: \(error)")
                 // Notify client about error
-                server?.sendMessage(usingConnection:connectionId, dic:["status": false, "message": "Failed to create new user"])
+                server?.sendMessage(usingConnection:connectionId, dic:["status": false, "message": "Failed to create new user", "error":"\(error)"])
             }
         }
         else if let loginDic = message["login"] as? [String:Any] {
-            if let user = loginUser(withDic:loginDic) {
+            do {
+                guard let user = try loginUser(withDic:loginDic) else { return }
+                
                 let userId = user.userId
                 userIdForConnectionId[connectionId] = userId
+                
                 // Notify client
                 server?.sendMessage(usingConnection:connectionId, dic:msgDicForUserLoggedIn(user))
                 // Notify delegates
                 delegate.invoke { $0.userLoggedIn(userId) }
             }
-            else {
-                userIdForConnectionId[connectionId] = kNoUserId
+            catch {
+                print("Failed to login: \(error)")
                 // Notify client about error
-                server?.sendMessage(usingConnection:connectionId, dic:["status": false, "message": "Failed to login"])
+                server?.sendMessage(usingConnection:connectionId, dic:["status": false, "message": "Failed to login", "error":"\(error)"])
             }
         }
         else if let userId = userIdForConnectionId[connectionId] {
@@ -152,15 +163,15 @@ class SessionManager : ServerDelegate {
     }
     
     // MARK: Private functions
-    private func createUser(withDic dic:[String:Any]) -> User? {
+    private func createUser(withDic dic:[String:Any]) throws -> User? {
         guard
             let name = dic["userName"] as? String,
             let colorDic = dic["color"] as? [String:Any],
             let r = colorDic["r"] as? Int,
             let g = colorDic["g"] as? Int,
             let b = colorDic["b"] as? Int
-            else { return nil }
-        return usersManager!.createUser(withName:name, withColor:Color(r:r, g:g, b:b))
+            else { throw SessionManagerError.invalidUserCreateRequest }
+        return try usersManager?.createUser(withName:name, withColor:Color(r:r, g:g, b:b))
     }
     
     private func msgDicForUserCreated(_ user:User) -> [String:Any] {
@@ -171,9 +182,10 @@ class SessionManager : ServerDelegate {
         ]
     }
     
-    private func loginUser(withDic dic:[String:Any]) -> User? {
-        guard let name = dic["userName"] as? String else { return nil }
-        return usersManager!.loginUser(withName:name)
+    private func loginUser(withDic dic:[String:Any]) throws -> User? {
+        guard let name = dic["userName"] as? String
+            else { throw SessionManagerError.invalidUserCreateRequest }
+        return try usersManager?.loginUser(withName:name)
     }
     
     private func msgDicForUserLoggedIn(_ user:User) -> [String:Any] {

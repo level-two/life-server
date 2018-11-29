@@ -27,6 +27,13 @@ public struct User {
     var name: String
     var color: Color
     var userId: Int
+    var isLoggedIn: Bool
+}
+
+public enum UsersManagerError : Error {
+    case UserAlreadyExists
+    case UserDoesntExist
+    case UserAlreadyLoggedIn
 }
 
 public class UsersManager {
@@ -42,22 +49,30 @@ public class UsersManager {
         // Store lastUserId and registeredUserss
     }
     
-    public func createUser(withName name:String, withColor color:Color) -> User? {
+    public func createUser(withName name:String, withColor color:Color) throws -> User {
         // return nil if user with this name exists
         if let _ = registeredUsers.first(where:{ $0.name == name }) {
-            return nil
+            throw UsersManagerError.UserAlreadyExists
         }
         
         let userId = lastUserId
         self.lastUserId += 1
         
-        let user = User(name: name, color: color, userId: userId)
+        let user = User(name:name, color:color, userId:userId, isLoggedIn:false)
         registeredUsers.append(user)
         return user
     }
     
-    public func loginUser(withName name:String) -> User? {
-        let user = registeredUsers.first(where:{ $0.name == name })
-        return user
+    public func loginUser(withName name:String) throws -> User {
+        guard let idx = registeredUsers.firstIndex(where:{ $0.name == name })
+            else { throw UsersManagerError.UserDoesntExist }
+        
+        if registeredUsers[idx].isLoggedIn {
+            throw UsersManagerError.UserAlreadyLoggedIn
+        }
+        
+        registeredUsers[idx].isLoggedIn = true
+        
+        return registeredUsers[idx]
     }
 }
