@@ -162,6 +162,7 @@ class Server {
                         .filter({ $0.remoteConnectionClosed })
                         .forEach({ [unowned self] in
                             let socketfd = $0.socketfd
+                            print("Connection at socket \(socketfd) closed")
                             $0.close()
                             self.delegate.invoke { $0.onConnectionClosed(withId:socketfd) }
                         })
@@ -191,13 +192,13 @@ class Server {
                     }
                     
                     if bytesRead > 0 {
-                        var dic: [String: Any]?
+                        print("Socket \(socket.socketfd) received data: \(String(data:readData, encoding:.utf8) ?? "nil")")
                         
+                        var dic: [String: Any]?
                         do {
                             dic = try JSONSerialization.jsonObject(with: readData, options: []) as? [String:Any]
                         } catch {
                             print("Failed to decode JSON: \(error)")
-                            print("Received data: \(String(data:readData, encoding:.utf8) ?? "nil")")
                             continue
                         }
                         

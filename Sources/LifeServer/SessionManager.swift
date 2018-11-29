@@ -61,6 +61,10 @@
     "status": false,
     "message": "Failed to create new user"
  }
+ 
+ Test JSONs:
+ {"create":{"userName":"abc","color":{"r":12,"g":11,"b":10}}}
+ {"login":{"userName":"abc"}}
 */
 
 import Foundation
