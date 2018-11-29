@@ -21,11 +21,9 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		93604A8321A863C400FF1EEB /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93604A8221A863C400FF1EEB /* Session.swift */; };
 		93604A8521A8665B00FF1EEB /* MulticastDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93604A8421A8665B00FF1EEB /* MulticastDelegate.swift */; };
 		93EEB4B421AAA1EF00EE1676 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93EEB4B321AAA1EF00EE1676 /* SessionManager.swift */; };
 		OBJ_35 /* Chat.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* Chat.swift */; };
-		OBJ_36 /* Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* Connection.swift */; };
 		OBJ_37 /* Gameplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* Gameplay.swift */; };
 		OBJ_38 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* Server.swift */; };
 		OBJ_39 /* UsersManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* UsersManager.swift */; };
@@ -73,12 +71,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		93604A8221A863C400FF1EEB /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
 		93604A8421A8665B00FF1EEB /* MulticastDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MulticastDelegate.swift; sourceTree = "<group>"; };
 		93EEB4B321AAA1EF00EE1676 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		"LifeServer::LifeServer::Product" /* LifeServer */ = {isa = PBXFileReference; lastKnownFileType = text; path = LifeServer; sourceTree = BUILT_PRODUCTS_DIR; };
 		"LifeServer::LifeServerTests::Product" /* LifeServerTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = LifeServerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		OBJ_10 /* Connection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connection.swift; sourceTree = "<group>"; };
 		OBJ_11 /* Gameplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gameplay.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Server.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; };
 		OBJ_13 /* UsersManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsersManager.swift; sourceTree = "<group>"; };
@@ -201,11 +197,9 @@
 			children = (
 				OBJ_14 /* main.swift */,
 				OBJ_9 /* Chat.swift */,
-				OBJ_10 /* Connection.swift */,
 				OBJ_11 /* Gameplay.swift */,
 				93604A8421A8665B00FF1EEB /* MulticastDelegate.swift */,
 				OBJ_12 /* Server.swift */,
-				93604A8221A863C400FF1EEB /* Session.swift */,
 				93EEB4B321AAA1EF00EE1676 /* SessionManager.swift */,
 				OBJ_13 /* UsersManager.swift */,
 			);
@@ -331,14 +325,12 @@
 			buildActionMask = 0;
 			files = (
 				OBJ_35 /* Chat.swift in Sources */,
-				OBJ_36 /* Connection.swift in Sources */,
 				93EEB4B421AAA1EF00EE1676 /* SessionManager.swift in Sources */,
 				OBJ_37 /* Gameplay.swift in Sources */,
 				93604A8521A8665B00FF1EEB /* MulticastDelegate.swift in Sources */,
 				OBJ_38 /* Server.swift in Sources */,
 				OBJ_39 /* UsersManager.swift in Sources */,
 				OBJ_40 /* main.swift in Sources */,
-				93604A8321A863C400FF1EEB /* Session.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

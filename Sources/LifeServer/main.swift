@@ -17,9 +17,11 @@
 
 import Foundation
 
-print("Hello, world!")
-let cm = ChatManager()
 let port = 1337
 let server = Server(port: port)
+let chat = Chat()
+let gameplay = Gameplay()
+let usersManager = UsersManager()
+let sessionManager = SessionManager(withServer: server, usersManager: usersManager)
 server.run()
 dispatchMain()

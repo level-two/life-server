@@ -77,7 +77,7 @@ class SessionManager : ServerDelegate {
     
     private weak var server: Server?
     private weak var usersManager: UsersManager?
-    private var userIdForConnectionId = [Int:Int]()
+    private var userIdForConnectionId = [Int32:Int]()
     private let kNoUserId = -1
     
     // MARK: Public methods
@@ -99,12 +99,12 @@ class SessionManager : ServerDelegate {
     }
     
     // MARK: ConnectionDelegate implementation
-    public func onConnectionEstablished(withId connectionId:Int) {
+    public func onConnectionEstablished(withId connectionId:Int32) {
         // Create anonymous session
         userIdForConnectionId[connectionId] = kNoUserId
     }
     
-    public func onConnection(withId connectionId:Int, received message:[String:Any]) {
+    public func onConnection(withId connectionId:Int32, received message:[String:Any]) {
         if let createDic = message["create"] as? [String:Any] {
             if let user = createUser(withDic:createDic) {
                 let userId = user.userId
@@ -140,7 +140,7 @@ class SessionManager : ServerDelegate {
         }
     }
     
-    public func onConnectionClosed(withId connectionId:Int) {
+    public func onConnectionClosed(withId connectionId:Int32) {
         if let userId = userIdForConnectionId[connectionId] {
             userIdForConnectionId.removeValue(forKey:connectionId)
             delegate.invoke { $0.userLoggedOut(userId) }

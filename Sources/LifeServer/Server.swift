@@ -20,9 +20,9 @@ import Socket
 import Dispatch
 
 protocol ServerDelegate {
-    func onConnectionEstablished(withId connectionId:Int)
-    func onConnection(withId connectionId:Int, received message:[String:Any])
-    func onConnectionClosed(withId connectionId:Int)
+    func onConnectionEstablished(withId connectionId:Int32)
+    func onConnection(withId connectionId:Int32, received message:[String:Any])
+    func onConnectionClosed(withId connectionId:Int32)
 }
 
 class ThreadSafeHelper {
@@ -78,6 +78,11 @@ class Server {
         shutdownServer()
     }
     
+    public func run() {
+        serverRunloop()
+        serveConnections()
+    }
+    
     func serverRunloop() {
         self.isListeningTaskFinished = true
         
@@ -91,11 +96,6 @@ class Server {
                 guard let socket = self.listenSocket else {
                     print("Failed to create listening socket...")
                     return
-                }
-                
-                defer {
-                    self.listenSocket?.close()
-                    self.listenSocket = nil
                 }
                 
                 try socket.listen(on: self.port)
@@ -122,7 +122,7 @@ class Server {
                         self.connectedSockets.append(newSocket)
                     }
                     
-                    self.delegate.invoke { $0.onConnectionEstablished(withId:Int(newSocket.socketfd)) }
+                    self.delegate.invoke { $0.onConnectionEstablished(withId:newSocket.socketfd) }
                 }
             }
             catch {
@@ -132,6 +132,9 @@ class Server {
                 else {
                     print("Unexpected error: \(error)")
                 }
+                // Shutdown server in case of listening socket errors
+                self.isListeningTaskFinished = true
+                self.shutdownServer()
             }
             
             self.isListeningTaskFinished = true
@@ -155,7 +158,13 @@ class Server {
                 var connectedSockets = [Socket]()
                 
                 self.threadSafe.performSyncBarrier { [unowned self] in
-                    self.connectedSockets.filter({ $0.remoteConnectionClosed }).forEach({ $0.close() })
+                    self.connectedSockets
+                        .filter({ $0.remoteConnectionClosed })
+                        .forEach({ [unowned self] in
+                            let socketfd = $0.socketfd
+                            $0.close()
+                            self.delegate.invoke { $0.onConnectionClosed(withId:socketfd) }
+                        })
                     self.connectedSockets.removeAll(where: { $0.remoteConnectionClosed } )
                     
                     connectedSockets = self.connectedSockets
@@ -193,7 +202,7 @@ class Server {
                         }
                         
                         if let msgDic = dic {
-                            self.delegate.invoke { $0.onConnection(withId:Int(socket.socketfd), received:msgDic) }
+                            self.delegate.invoke { $0.onConnection(withId:socket.socketfd, received:msgDic) }
                         }
                     }
                 }
