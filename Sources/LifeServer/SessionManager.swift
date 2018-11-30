@@ -77,8 +77,17 @@ protocol SessionManagerDelegate {
 }
 
 public enum SessionManagerError : Error {
-    case invalidUserCreateRequest
-    case invalidUserLoginRequest
+    case InvalidUserCreateRequest
+    case InvalidUserLoginRequest
+    case InvalidUserLogoutRequest
+    case UserDoesntExist
+    case CreateUserReturnedNil
+    case UserIsNotLoggedIn
+    case UserAlreadyLoggedIn
+    case UserAlreadyLoggedInOnOtherConnection
+    case AnotherUserAlreadyLoggedIn
+    case UserAlreadyLoggedOut
+    case InvalidUserIdForLogout
 }
 
 class SessionManager : ServerDelegate {
@@ -115,40 +124,13 @@ class SessionManager : ServerDelegate {
     
     public func onConnection(withId connectionId:Int32, received message:[String:Any]) {
         if let createDic = message["create"] as? [String:Any] {
-            do {
-                guard let user = try createUser(withDic:createDic) else { return }
-                
-                let userId = user.userId
-                userIdForConnectionId[connectionId] = userId
-                
-                // Notify client
-                server?.sendMessage(usingConnection:connectionId, dic:msgDicForUserCreated(user))
-                // Notify delegates
-                delegate.invoke { $0.userLoggedIn(userId) }
-            }
-            catch {
-                print("Failed to create user: \(error)")
-                // Notify client about error
-                server?.sendMessage(usingConnection:connectionId, dic:["status": false, "message": "Failed to create new user", "error":"\(error)"])
-            }
+            createUser(withDic:createDic, connectionId:connectionId)
         }
         else if let loginDic = message["login"] as? [String:Any] {
-            do {
-                guard let user = try loginUser(withDic:loginDic) else { return }
-                
-                let userId = user.userId
-                userIdForConnectionId[connectionId] = userId
-                
-                // Notify client
-                server?.sendMessage(usingConnection:connectionId, dic:msgDicForUserLoggedIn(user))
-                // Notify delegates
-                delegate.invoke { $0.userLoggedIn(userId) }
-            }
-            catch {
-                print("Failed to login: \(error)")
-                // Notify client about error
-                server?.sendMessage(usingConnection:connectionId, dic:["status": false, "message": "Failed to login", "error":"\(error)"])
-            }
+            loginUser(withDic:loginDic, connectionId:connectionId)
+        }
+        else if let logoutDic = message["logout"] as? [String:Any] {
+            logoutUser(withDic:logoutDic, connectionId:connectionId)
         }
         else if let userId = userIdForConnectionId[connectionId] {
             delegate.invoke { $0.gotMessage(forUser: userId, msg: message) }
@@ -156,43 +138,113 @@ class SessionManager : ServerDelegate {
     }
     
     public func onConnectionClosed(withId connectionId:Int32) {
-        if let userId = userIdForConnectionId[connectionId] {
-            userIdForConnectionId.removeValue(forKey:connectionId)
+        guard let userId = userIdForConnectionId[connectionId] else { return }
+        if userId != kNoUserId {
             delegate.invoke { $0.userLoggedOut(userId) }
         }
+        userIdForConnectionId.removeValue(forKey:connectionId)
     }
     
     // MARK: Private functions
-    private func createUser(withDic dic:[String:Any]) throws -> User? {
-        guard
-            let name = dic["userName"] as? String,
-            let colorDic = dic["color"] as? [String:Any],
-            let r = colorDic["r"] as? Int,
-            let g = colorDic["g"] as? Int,
-            let b = colorDic["b"] as? Int
-            else { throw SessionManagerError.invalidUserCreateRequest }
-        return try usersManager?.createUser(withName:name, withColor:Color(r:r, g:g, b:b))
+    private func createUser(withDic dic:[String:Any], connectionId:Int32) {
+        do {
+            guard
+                let name = dic["userName"] as? String,
+                let colorDic = dic["color"] as? [String:Any],
+                let r = colorDic["r"] as? Int,
+                let g = colorDic["g"] as? Int,
+                let b = colorDic["b"] as? Int
+                else {
+                    throw SessionManagerError.InvalidUserCreateRequest
+                }
+            
+            guard let user = try usersManager?.createUser(withName:name, withColor:Color(r:r, g:g, b:b)) else {
+                throw SessionManagerError.CreateUserReturnedNil
+            }
+            
+            // Notify client
+            server?.sendMessage(usingConnection:connectionId,
+                                dic:["status":true, "userId":"\(user.userId)", "message":"User \(user.name) created sucessfully"])
+        }
+        catch {
+            print("Failed to create new user: \(error)")
+            
+            // Notify client about error
+            server?.sendMessage(usingConnection:connectionId, dic:["status":false, "message":"Failed to create new user: \(error)"])
+        }
     }
     
-    private func msgDicForUserCreated(_ user:User) -> [String:Any] {
-        return [
-            "status": true,
-            "userId": "\(user.userId)",
-            "message": "User \(user.name) created sucessfully"
-        ]
+    private func loginUser(withDic dic:[String:Any], connectionId:Int32) {
+        do {
+            guard let userId = dic["userId"] as? Int else {
+                throw SessionManagerError.InvalidUserLoginRequest
+            }
+            
+            if userIdForConnectionId[connectionId] == userId {
+                throw SessionManagerError.UserAlreadyLoggedIn
+            }
+            
+            if userIdForConnectionId[connectionId] != kNoUserId {
+                throw SessionManagerError.AnotherUserAlreadyLoggedIn
+            }
+            
+            if let _ = userIdForConnectionId.values.first(where:{$0 == userId}) {
+                throw SessionManagerError.UserAlreadyLoggedInOnOtherConnection
+            }
+            
+            guard let user = usersManager?.getUser(withId: userId) else {
+                throw SessionManagerError.UserDoesntExist
+            }
+            
+            userIdForConnectionId[connectionId] = userId
+            
+            // Notify client
+            server?.sendMessage(usingConnection:connectionId,
+                                dic:["status":true, "userId":"\(userId)", "message":"User \(user.name) logged in sucessfully"])
+            
+            // Notify delegates
+            delegate.invoke { $0.userLoggedIn(userId) }
+        }
+        catch {
+            print("Failed to login: \(error)")
+            
+            // Notify client about error
+            server?.sendMessage(usingConnection:connectionId,
+                                dic:["status": false, "message": "Failed to login: \(error)"])
+        }
     }
     
-    private func loginUser(withDic dic:[String:Any]) throws -> User? {
-        guard let name = dic["userName"] as? String
-            else { throw SessionManagerError.invalidUserCreateRequest }
-        return try usersManager?.loginUser(withName:name)
-    }
-    
-    private func msgDicForUserLoggedIn(_ user:User) -> [String:Any] {
-        return [
-            "status": true,
-            "userId": "\(user.userId)",
-            "message": "User \(user.name) logged in sucessfully"
-        ]
+    private func logoutUser(withDic dic:[String:Any], connectionId:Int32) {
+        do {
+            guard let userId = dic["userId"] as? Int else {
+                throw SessionManagerError.InvalidUserLogoutRequest
+            }
+            
+            let connectedUserId = userIdForConnectionId[connectionId]!
+            
+            if connectedUserId == kNoUserId {
+                throw SessionManagerError.UserIsNotLoggedIn
+            }
+            
+            if connectedUserId != userId {
+                throw SessionManagerError.InvalidUserIdForLogout
+            }
+            
+            userIdForConnectionId[connectionId] = kNoUserId
+            
+            // Notify client
+            server?.sendMessage(usingConnection:connectionId,
+                                dic:["status":true, "userId":"\(userId)","message": "User logged out sucessfully"])
+            
+            // Notify delegates
+            delegate.invoke { $0.userLoggedOut(userId) }
+        }
+        catch {
+            print("Failed to logout: \(error)")
+            
+            // Notify client about error
+            server?.sendMessage(usingConnection:connectionId,
+                                dic:["status":false, "message":"Failed to logout: \(error)"])
+        }
     }
 }

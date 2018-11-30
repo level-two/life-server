@@ -17,23 +17,20 @@
 
 import Foundation
 
-public struct Color {
+public struct Color : Codable {
     var r: Int = 0
     var g: Int = 0
     var b: Int = 0
 }
 
-public struct User {
+public struct User : Codable {
     var name: String
     var color: Color
     var userId: Int
-    var isLoggedIn: Bool
 }
 
 public enum UsersManagerError : Error {
     case UserAlreadyExists
-    case UserDoesntExist
-    case UserAlreadyLoggedIn
 }
 
 public class UsersManager {
@@ -43,10 +40,24 @@ public class UsersManager {
     init() {
         lastUserId = 0 // TODO Restore previous state during server startup
         registeredUsers = []
-    }
-    
-    deinit {
-        // Store lastUserId and registeredUserss
+        
+        do {
+            let url = try getStoredUsersUrl()
+            
+            if FileManager.default.fileExists(atPath: url.path) {
+                let data = try Data(contentsOf: url)
+                self.registeredUsers = try JSONDecoder().decode([User].self, from: data)
+                if let lastId = registeredUsers.last?.userId {
+                    self.lastUserId = lastId
+                }
+            }
+            else {
+                FileManager.default.createFile(atPath: url.path, contents: "[\n]".data(using:.utf8)!, attributes: nil)
+            }
+        }
+        catch {
+            print("Failed to load registered users list: \(error)")
+        }
     }
     
     public func createUser(withName name:String, withColor color:Color) throws -> User {
@@ -55,24 +66,35 @@ public class UsersManager {
             throw UsersManagerError.UserAlreadyExists
         }
         
-        let userId = lastUserId
         self.lastUserId += 1
+        let userId = lastUserId
         
-        let user = User(name:name, color:color, userId:userId, isLoggedIn:false)
+        let user = User(name:name, color:color, userId:userId)
         registeredUsers.append(user)
+        
+        let userJson = try JSONEncoder().encode(user)
+        let url = try getStoredUsersUrl()
+        
+        let fileHandle = try FileHandle(forUpdating: url)
+        fileHandle.seekToEndOfFile()
+        fileHandle.seek(toFileOffset:fileHandle.offsetInFile-1)
+        fileHandle.write(userJson)
+        fileHandle.write(",\n]".data(using:.utf8)!)
+        fileHandle.closeFile()
+        
         return user
     }
     
-    public func loginUser(withName name:String) throws -> User {
-        guard let idx = registeredUsers.firstIndex(where:{ $0.name == name })
-            else { throw UsersManagerError.UserDoesntExist }
-        
-        if registeredUsers[idx].isLoggedIn {
-            throw UsersManagerError.UserAlreadyLoggedIn
-        }
-        
-        registeredUsers[idx].isLoggedIn = true
-        
-        return registeredUsers[idx]
+    public func getUser(withId userId:Int) -> User? {
+        return registeredUsers.first(where: { $0.userId == userId })
+    }
+    
+    func getStoredUsersUrl() throws -> URL {
+        #if os(Linux)
+            let url = URL(fileURLWithPath: "/var/lib/life-server", isDirectory: true)
+        #elseif os(macOS)
+            let url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        #endif
+        return url.appendingPathComponent("RegisteredUsers.json")
     }
 }
