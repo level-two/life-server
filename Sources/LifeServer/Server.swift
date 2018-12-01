@@ -17,36 +17,11 @@
 
 import Foundation
 import Socket
-import Dispatch
 
 protocol ServerDelegate {
     func onConnectionEstablished(withId connectionId:Int32)
     func onConnection(withId connectionId:Int32, received message:[String:Any])
     func onConnectionClosed(withId connectionId:Int32)
-}
-
-class ThreadSafeHelper {
-    private let lockQueue: DispatchQueue
-    
-    init(withQueueName queueName:String) {
-        lockQueue = DispatchQueue(label: queueName, attributes:.concurrent)
-    }
-    
-    public func performAsyncConcurrent(closure:@escaping ()->Void) {
-        lockQueue.async { closure() }
-    }
-    
-    public func performSyncConcurrent(closure:@escaping ()->Void) {
-        lockQueue.sync { closure() }
-    }
-    
-    public func performAsyncBarrier(closure:@escaping ()->Void) {
-        lockQueue.async(flags: .barrier)  { closure() }
-    }
-    
-    public func performSyncBarrier(closure:@escaping ()->Void) {
-        lockQueue.sync(flags: .barrier)  { closure() }
-    }
 }
 
 class Server {
@@ -154,20 +129,28 @@ class Server {
             while !self.stopTasks {
                 var readData = Data(capacity: self.bufferSize)
                 
-                // get sockets list copy
-                var connectedSockets = [Socket]()
+                var closedSocketIds = [Int32]()
                 
                 self.threadSafe.performSyncBarrier { [unowned self] in
                     self.connectedSockets
                         .filter({ $0.remoteConnectionClosed })
-                        .forEach({ [unowned self] in
+                        .forEach({
                             let socketfd = $0.socketfd
                             print("Connection at socket \(socketfd) closed")
                             $0.close()
-                            self.delegate.invoke { $0.onConnectionClosed(withId:socketfd) }
+                            closedSocketIds.append(socketfd)
                         })
                     self.connectedSockets.removeAll(where: { $0.remoteConnectionClosed } )
-                    
+                }
+                
+                closedSocketIds.forEach( { [unowned self] in
+                    let socketfd = $0
+                    self.delegate.invoke { $0.onConnectionClosed(withId:socketfd) }
+                })
+                
+                // get sockets list copy
+                var connectedSockets = [Socket]()
+                self.threadSafe.performSyncConcurrent { [unowned self] in
                     connectedSockets = self.connectedSockets
                 }
                 

@@ -88,6 +88,7 @@ public enum SessionManagerError : Error {
     case AnotherUserAlreadyLoggedIn
     case UserAlreadyLoggedOut
     case InvalidUserIdForLogout
+    case NoSessionForConnection
 }
 
 class SessionManager : ServerDelegate {
@@ -97,6 +98,7 @@ class SessionManager : ServerDelegate {
     private weak var usersManager: UsersManager?
     private var userIdForConnectionId = [Int32:Int]()
     private let kNoUserId = -1
+    let threadSafe = ThreadSafeHelper(withQueueName: "com.yauheni-lychkouski.life-server.sessionManagerLockQueue")
     
     // MARK: Public methods
     init(withServer server:Server, usersManager:UsersManager) {
@@ -106,23 +108,29 @@ class SessionManager : ServerDelegate {
     }
     
     public func sendMessageBroadcast(dic:[String:Any]) {
-        for connectionId in userIdForConnectionId.keys {
+        let uidVsCon = safeGetUidVsCon()
+        for connectionId in uidVsCon.keys {
             server?.sendMessage(usingConnection: connectionId, dic: dic)
         }
     }
     
     public func sendMessageToUser(_ userId:Int, dic:[String:Any]) {
-        guard let connectionId = userIdForConnectionId.first(where:{$1==userId})?.key else { return }
+        let uidVsCon = safeGetUidVsCon()
+        guard let connectionId = uidVsCon.first(where:{$1==userId})?.key else { return }
         server?.sendMessage(usingConnection: connectionId, dic: dic)
     }
     
     // MARK: ConnectionDelegate implementation
     public func onConnectionEstablished(withId connectionId:Int32) {
         // Create anonymous session
-        userIdForConnectionId[connectionId] = kNoUserId
+        threadSafe.performAsyncBarrier { [unowned self] in
+            self.userIdForConnectionId[connectionId] = self.kNoUserId
+        }
     }
     
     public func onConnection(withId connectionId:Int32, received message:[String:Any]) {
+        let uidVsCon = safeGetUidVsCon()
+        
         if let createDic = message["create"] as? [String:Any] {
             createUser(withDic:createDic, connectionId:connectionId)
         }
@@ -132,20 +140,34 @@ class SessionManager : ServerDelegate {
         else if let logoutDic = message["logout"] as? [String:Any] {
             logoutUser(withDic:logoutDic, connectionId:connectionId)
         }
-        else if let userId = userIdForConnectionId[connectionId] {
+        else if let userId = uidVsCon[connectionId] {
             delegate.invoke { $0.gotMessage(forUser: userId, msg: message) }
         }
     }
     
     public func onConnectionClosed(withId connectionId:Int32) {
-        guard let userId = userIdForConnectionId[connectionId] else { return }
-        if userId != kNoUserId {
-            delegate.invoke { $0.userLoggedOut(userId) }
+        var userId: Int?
+        threadSafe.performSyncBarrier { [unowned self, connectionId] in
+            userId = self.userIdForConnectionId[connectionId]
+            if userId != nil {
+                self.userIdForConnectionId.removeValue(forKey:connectionId)
+            }
         }
-        userIdForConnectionId.removeValue(forKey:connectionId)
+        guard let uid = userId else { return }
+        if uid != kNoUserId {
+            delegate.invoke { $0.userLoggedOut(uid) }
+        }
     }
     
     // MARK: Private functions
+    private func safeGetUidVsCon() -> [Int32:Int] {
+        var uidVsCon = [Int32:Int]()
+        threadSafe.performSyncConcurrent { [unowned self] in
+            uidVsCon = self.userIdForConnectionId
+        }
+        return uidVsCon
+    }
+        
     private func createUser(withDic dic:[String:Any], connectionId:Int32) {
         do {
             guard
@@ -180,15 +202,17 @@ class SessionManager : ServerDelegate {
                 throw SessionManagerError.InvalidUserLoginRequest
             }
             
-            if userIdForConnectionId[connectionId] == userId {
+            let uidVsCon = safeGetUidVsCon()
+            
+            if uidVsCon[connectionId] == userId {
                 throw SessionManagerError.UserAlreadyLoggedIn
             }
             
-            if userIdForConnectionId[connectionId] != kNoUserId {
+            if uidVsCon[connectionId] != kNoUserId {
                 throw SessionManagerError.AnotherUserAlreadyLoggedIn
             }
             
-            if let _ = userIdForConnectionId.values.first(where:{$0 == userId}) {
+            if let _ = uidVsCon.values.first(where:{$0 == userId}) {
                 throw SessionManagerError.UserAlreadyLoggedInOnOtherConnection
             }
             
@@ -196,7 +220,9 @@ class SessionManager : ServerDelegate {
                 throw SessionManagerError.UserDoesntExist
             }
             
-            userIdForConnectionId[connectionId] = userId
+            threadSafe.performAsyncBarrier { [unowned self, userId] in
+                self.userIdForConnectionId[connectionId] = userId
+            }
             
             // Notify client
             server?.sendMessage(usingConnection:connectionId,
@@ -220,7 +246,10 @@ class SessionManager : ServerDelegate {
                 throw SessionManagerError.InvalidUserLogoutRequest
             }
             
-            let connectedUserId = userIdForConnectionId[connectionId]!
+            let uidVsCon = safeGetUidVsCon()
+            guard let connectedUserId = uidVsCon[connectionId] else {
+                throw SessionManagerError.NoSessionForConnection
+            }
             
             if connectedUserId == kNoUserId {
                 throw SessionManagerError.UserIsNotLoggedIn
@@ -230,7 +259,9 @@ class SessionManager : ServerDelegate {
                 throw SessionManagerError.InvalidUserIdForLogout
             }
             
-            userIdForConnectionId[connectionId] = kNoUserId
+            threadSafe.performAsyncBarrier { [unowned self] in
+                self.userIdForConnectionId[connectionId] = self.kNoUserId
+            }
             
             // Notify client
             server?.sendMessage(usingConnection:connectionId,
