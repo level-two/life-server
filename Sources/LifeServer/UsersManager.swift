@@ -52,6 +52,7 @@ public class UsersManager {
                 }
             }
             else {
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
                 FileManager.default.createFile(atPath: url.path, contents: "[\n]".data(using:.utf8)!, attributes: nil)
             }
         }
@@ -91,10 +92,10 @@ public class UsersManager {
     
     func getStoredUsersUrl() throws -> URL {
         #if os(Linux)
-            let url = URL(fileURLWithPath: "/var/lib/life-server", isDirectory: true)
+            let url = URL(fileURLWithPath: "/var/lib")
         #elseif os(macOS)
             let url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         #endif
-        return url.appendingPathComponent("RegisteredUsers.json")
+        return url.appendingPathComponent("LifeServer/RegisteredUsers.json")
     }
 }
