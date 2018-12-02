@@ -17,11 +17,37 @@
 
 import Foundation
 
+// TODO: Add first run initialization
+// TODO: Add place to handle common things like paths and preferences
+
+do {
+    #if os(Linux)
+    var url = URL(fileURLWithPath: "/var/lib")
+    #elseif os(macOS)
+    var url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+    #endif
+    url.appendPathComponent("LifeServer/")
+
+    if FileManager.default.fileExists(atPath: url.path) == false {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
+    }
+}
+catch {
+    print("Failed to create directory for internal files: \(error)")
+}
+    
 let port = 1337
 let server = Server(port: port)
-let chat = Chat()
-let gameplay = Gameplay()
 let usersManager = UsersManager()
 let sessionManager = SessionManager(withServer: server, usersManager: usersManager)
+let chat: Chat?
+do {
+    chat = try Chat(sessionManager: sessionManager, usersManager: usersManager)
+}
+catch {
+    print ("Failed to initialize Chat: \(error)")
+}
+let gameplay = Gameplay()
+
 server.run()
 dispatchMain()

@@ -52,7 +52,6 @@ public class UsersManager {
                 }
             }
             else {
-                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
                 FileManager.default.createFile(atPath: url.path, contents: "[\n]".data(using:.utf8)!, attributes: nil)
             }
         }
