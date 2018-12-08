@@ -224,24 +224,23 @@ class Server {
         }
     }
     
-    public func sendMessage(usingConnection connectionId:Int32, dic:[String:Any]) {
-        var jsonData : Data?
+    public func sendMessage<T:Codable>(usingConnection connectionId:Int32, codableObj:T) {
         do {
-            jsonData = try JSONSerialization.data(withJSONObject: dic, options: .prettyPrinted)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let jsonData = try encoder.encode(codableObj)
+            
+            self.threadSafe.performAsyncBarrier { [unowned self, connectionId, jsonData] in
+                if self.messagesToSend[connectionId] != nil {
+                    self.messagesToSend[connectionId]!.append(jsonData)
+                }
+                else {
+                    self.messagesToSend[connectionId] = [jsonData]
+                }
+            }
         }
         catch {
             print("Failed to serialize dictionary to JSON data: \(error)")
-        }
-        
-        guard let data = jsonData else { return }
-        
-        self.threadSafe.performAsyncBarrier { [unowned self, connectionId, data] in
-            if self.messagesToSend[connectionId] != nil {
-                self.messagesToSend[connectionId]!.append(data)
-            }
-            else {
-                self.messagesToSend[connectionId] = [data]
-            }
         }
     }
     

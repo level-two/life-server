@@ -74,6 +74,7 @@
 /* Begin PBXFileReference section */
 		9311EA8021B289AB00C32CAB /* ThreadSafeHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThreadSafeHelper.swift; sourceTree = "<group>"; };
 		93604A8421A8665B00FF1EEB /* MulticastDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MulticastDelegate.swift; sourceTree = "<group>"; };
+		938F1F8F21BB839200797EBE /* commands.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = commands.json; sourceTree = "<group>"; };
 		93EEB4B321AAA1EF00EE1676 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		"LifeServer::LifeServer::Product" /* LifeServer */ = {isa = PBXFileReference; lastKnownFileType = text; path = LifeServer; sourceTree = BUILT_PRODUCTS_DIR; };
 		"LifeServer::LifeServerTests::Product" /* LifeServerTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = LifeServerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -205,6 +206,7 @@
 				OBJ_11 /* Gameplay.swift */,
 				9311EA8021B289AB00C32CAB /* ThreadSafeHelper.swift */,
 				93604A8421A8665B00FF1EEB /* MulticastDelegate.swift */,
+				938F1F8F21BB839200797EBE /* commands.json */,
 			);
 			name = LifeServer;
 			path = Sources/LifeServer;

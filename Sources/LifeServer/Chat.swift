@@ -29,6 +29,20 @@ struct ChatMessage : Codable {
     var message: String
 }
 
+struct BroadcastChatMessage : Codable {
+    var chatMessage: ChatMessage
+}
+
+struct RecentChatMessages : Codable {
+    var status: Bool
+    var recentMessages: [ChatMessage]
+}
+
+struct ChatErrorResponse: Codable {
+    var status: Bool
+    var message: String
+}
+
 public class Chat : SessionManagerDelegate {
     weak var sessionManager: SessionManager?
     weak var usersManager: UsersManager?
@@ -102,8 +116,8 @@ public class Chat : SessionManagerDelegate {
         if let messageText = msg["sendMessage"] as? String {
             processChatMessage(withConnection:connectionId, user:userId, messageText:messageText)
         }
-        else if let chatHistoryRequest = msg["recentMessagesRequest"] as? [String:Any] {
-            processChatRecentMessagesRequest(withConnection:connectionId, user:userId, request:chatHistoryRequest)
+        else if let _ = msg["recentMessagesRequest"] as? String {
+            processChatRecentMessagesRequest(withConnection:connectionId, user:userId)
         }
         else if let chatHistoryRequest = msg["messagesRequest"] as? [String:Any] {
             processChatMessagesRequest(withConnection:connectionId, user:userId, request:chatHistoryRequest)
@@ -135,7 +149,8 @@ public class Chat : SessionManagerDelegate {
                 self.recentMessages.remove(at: 0)
             }
             
-            sessionManager?.sendMessageBroadcast(dic: ["chatMessage":chatMessage])
+            let broadcastChatMessage = BroadcastChatMessage(chatMessage: chatMessage)
+            sessionManager?.sendMessageBroadcast(broadcastChatMessage)
             
             seiralQueue.async { [unowned self, chatMessage] in
                 do {
@@ -150,12 +165,14 @@ public class Chat : SessionManagerDelegate {
             print("Chat: Failed to process incoming message: \(error)")
             
             // Notify client about error
-            sessionManager?.sendMessage(connectionId, dic:["sendMessageResponse":["status":false, "message":"Failed to process incoming message: \(error)"]])
+            sessionManager?.sendMessage(connectionId,
+                                        codableObj: ChatErrorResponse(status: false, message: "Failed to process incoming message: \(error)"))
         }
     }
     
-    func processChatRecentMessagesRequest(withConnection connectionId:Int32, user userId:Int, request:[String:Any]) {
-        sessionManager?.sendMessage(connectionId, dic:["recentMessagesResponse":["status":true, "recentMessages":self.recentMessages]])
+    func processChatRecentMessagesRequest(withConnection connectionId:Int32, user userId:Int) {
+        let recentChatMessages = RecentChatMessages(status: true, recentMessages: self.recentMessages)
+        sessionManager?.sendMessage(connectionId, codableObj:recentChatMessages)
     }
     
     func processChatMessagesRequest(withConnection connectionId:Int32, user userId:Int, request:[String:Any]) {
@@ -178,13 +195,15 @@ public class Chat : SessionManagerDelegate {
                 }
             }
             
-            sessionManager?.sendMessage(connectionId, dic:["getMessagesResponse":["status":true, "messages":chatMessages, "fromId":fromId, "count":count]])
+            sessionManager?.sendMessage(connectionId,
+                                        codableObj: RecentChatMessages(status: true, recentMessages: chatMessages))
         }
         catch {
             print("Chat: Failed to process messages request: \(error)")
             
             // Notify client about error
-            sessionManager?.sendMessage(connectionId, dic:["getMessagesResponse":["status":false, "message":"Failed to process incoming message: \(error)"]])
+            sessionManager?.sendMessage(connectionId,
+                                        codableObj: ChatErrorResponse(status: false, message: "Failed to process incoming message: \(error)"))
         }
     }
     
@@ -202,26 +221,34 @@ public class Chat : SessionManagerDelegate {
     func getMessages(fromId:Int, count:Int) throws -> [ChatMessage] {
         guard
             fromId >= 0,
-            count > 0,
+            count >= 0,
             fromId < self.lastMessageId,
             fromId + count < self.lastMessageId
         else {
             throw ChatError.InvalidChatMessagesRequest
         }
         
+        let toId = fromId + count
         let fromPos = self.logIndex[fromId]
-        let toPos = self.logIndex[fromId+count]
-        let dataLength = toPos - fromPos
-        self.logFileHandle.seek(toFileOffset: UInt64(fromPos))
+        var logData: Data
         
-        let logData = self.logFileHandle.readData(ofLength: Int(dataLength))
+        if (toId == self.lastMessageId-1) {
+            self.logFileHandle.seek(toFileOffset: UInt64(fromPos))
+            logData = self.logFileHandle.readDataToEndOfFile()
+        }
+        else {
+            let toPos = self.logIndex[toId+1]
+            let dataLength = toPos - fromPos
+            self.logFileHandle.seek(toFileOffset: UInt64(fromPos))
+            logData = self.logFileHandle.readData(ofLength: Int(dataLength))
+            self.logFileHandle.seekToEndOfFile()
+        }
+        
         var data = "[".data(using:.utf8)!
         data.append(logData)
         data.append("]".data(using:.utf8)!)
         let result = try JSONDecoder().decode([ChatMessage].self, from: data)
-        
-        self.logFileHandle.seekToEndOfFile()
-        
+
         return result
     }
 }
