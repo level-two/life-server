@@ -49,20 +49,27 @@ public class Chat : SessionManagerDelegate {
         self.recentMessages = []
         self.lastMessageId = 0
         self.logIndex = []
-        self.sessionManager?.delegate.add(delegate: self)
         
-        let (logFileUrl, logIndexFileUrl) = try getLogFileUrls()
+        #if os(Linux)
+            let url = URL(fileURLWithPath: "/var/lib")
+        #elseif os(macOS)
+            let url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        #endif
+        let logFileUrl = url.appendingPathComponent("LifeServer/ChatLog.db")
+        let logIndexFileUrl = url.appendingPathComponent("LifeServer/ChatLogIndex.db")
         
         // Create files if they don't exist
-        if FileManager.default.fileExists(atPath: logFileUrl.path) {
+        if FileManager.default.fileExists(atPath: logFileUrl.path) == false {
             FileManager.default.createFile(atPath: logFileUrl.path, contents: nil, attributes: nil)
         }
-        if FileManager.default.fileExists(atPath: logIndexFileUrl.path) {
+        if FileManager.default.fileExists(atPath: logIndexFileUrl.path) == false {
             FileManager.default.createFile(atPath: logIndexFileUrl.path, contents: nil, attributes: nil)
         }
         // Open log and index fiels for update
         self.logFileHandle = try FileHandle(forUpdating: logFileUrl)
         self.logIndexFileHandle = try FileHandle(forUpdating: logIndexFileUrl)
+        
+        self.sessionManager?.delegate.add(delegate: self)
         
         // Load recent messages and messages index
         var logIndexFileData = try Data(contentsOf: logIndexFileUrl)
@@ -91,15 +98,15 @@ public class Chat : SessionManagerDelegate {
         self.logIndexFileHandle.closeFile()
     }
     
-    public func gotMessage(forUser userId:Int, msg:[String:Any]) {
-        if let messageText = msg["chatMessage"] as? String {
-            processChatMessage(withUser:userId, messageText:messageText)
+    public func gotMessage(forConnection connectionId:Int32, user userId:Int, msg:[String:Any]) {
+        if let messageText = msg["sendMessage"] as? String {
+            processChatMessage(withConnection:connectionId, user:userId, messageText:messageText)
         }
-        else if let chatHistoryRequest = msg["chatGetRecentMessages"] as? [String:Any] {
-            processChatRecentMessagesRequest(withUser:userId, request:chatHistoryRequest)
+        else if let chatHistoryRequest = msg["recentMessagesRequest"] as? [String:Any] {
+            processChatRecentMessagesRequest(withConnection:connectionId, user:userId, request:chatHistoryRequest)
         }
-        else if let chatHistoryRequest = msg["chatGetMessages"] as? [String:Any] {
-            processChatMessagesRequest(withUser:userId, request:chatHistoryRequest)
+        else if let chatHistoryRequest = msg["messagesRequest"] as? [String:Any] {
+            processChatMessagesRequest(withConnection:connectionId, user:userId, request:chatHistoryRequest)
         }
     }
     
@@ -111,7 +118,7 @@ public class Chat : SessionManagerDelegate {
         
     }
     
-    func processChatMessage(withUser userId:Int, messageText:String) {
+    func processChatMessage(withConnection connectionId:Int32, user userId:Int, messageText:String) {
         do {
             guard let user = usersManager?.getUser(withId: userId) else {
                 throw ChatError.MessageFromAnonymousUser
@@ -143,24 +150,42 @@ public class Chat : SessionManagerDelegate {
             print("Chat: Failed to process incoming message: \(error)")
             
             // Notify client about error
-            sessionManager?.sendMessageToUser(userId, dic:["status":false, "message":"Failed to process incoming message: \(error)"])
+            sessionManager?.sendMessage(connectionId, dic:["sendMessageResponse":["status":false, "message":"Failed to process incoming message: \(error)"]])
         }
     }
     
-    func processChatRecentMessagesRequest(withUser userId:Int, request:[String:Any]) {
-        sessionManager?.sendMessageToUser(userId, dic:["status":true, "recentMessages":self.recentMessages])
+    func processChatRecentMessagesRequest(withConnection connectionId:Int32, user userId:Int, request:[String:Any]) {
+        sessionManager?.sendMessage(connectionId, dic:["recentMessagesResponse":["status":true, "recentMessages":self.recentMessages]])
     }
     
-    func getLogFileUrls() throws -> (URL, URL) {
-        #if os(Linux)
-        let url = URL(fileURLWithPath: "/var/lib")
-        #elseif os(macOS)
-        let url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        #endif
-        let logFileUrl = url.appendingPathComponent("LifeServer/ChatLog.db")
-        let logIndexFileUrl = url.appendingPathComponent("LifeServer/ChatLogIndex.db")
-        
-        return (logFileUrl, logIndexFileUrl)
+    func processChatMessagesRequest(withConnection connectionId:Int32, user userId:Int, request:[String:Any]) {
+        do {
+            guard
+                let fromId = request["fromId"] as? Int,
+                let count = request["count"] as? Int
+                else {
+                    throw ChatError.InvalidChatMessagesRequest
+            }
+                
+            var chatMessages = [ChatMessage]()
+            
+            seiralQueue.sync { [unowned self] in
+                do {
+                    chatMessages = try self.getMessages(fromId: fromId, count: count)
+                }
+                catch {
+                    print("Failed to get messages: \(error)")
+                }
+            }
+            
+            sessionManager?.sendMessage(connectionId, dic:["getMessagesResponse":["status":true, "messages":chatMessages, "fromId":fromId, "count":count]])
+        }
+        catch {
+            print("Chat: Failed to process messages request: \(error)")
+            
+            // Notify client about error
+            sessionManager?.sendMessage(connectionId, dic:["getMessagesResponse":["status":false, "message":"Failed to process incoming message: \(error)"]])
+        }
     }
     
     func storeMessage(chatMessage:ChatMessage) throws {

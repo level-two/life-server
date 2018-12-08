@@ -70,7 +70,7 @@
 import Foundation
 
 protocol SessionManagerDelegate {
-    func gotMessage(forUser userId:Int, msg:[String:Any])
+    func gotMessage(forConnection connectionId:Int32, user userId:Int, msg:[String:Any])
     //func anonymousConnectionEstablished()
     func userLoggedIn(_ userId:Int)
     func userLoggedOut(_ userId:Int)
@@ -114,9 +114,9 @@ class SessionManager : ServerDelegate {
         }
     }
     
-    public func sendMessageToUser(_ userId:Int, dic:[String:Any]) {
-        let uidVsCon = safeGetUidVsCon()
-        guard let connectionId = uidVsCon.first(where:{$1==userId})?.key else { return }
+    public func sendMessage(_ connectionId:Int32, dic:[String:Any]) {
+        //let uidVsCon = safeGetUidVsCon()
+        //guard let connectionId = uidVsCon.first(where:{$1==userId})?.key else { return }
         server?.sendMessage(usingConnection: connectionId, dic: dic)
     }
     
@@ -141,7 +141,7 @@ class SessionManager : ServerDelegate {
             logoutUser(withDic:logoutDic, connectionId:connectionId)
         }
         else if let userId = uidVsCon[connectionId] {
-            delegate.invoke { $0.gotMessage(forUser: userId, msg: message) }
+            delegate.invoke { $0.gotMessage(forConnection: connectionId, user: userId, msg: message) }
         }
     }
     
