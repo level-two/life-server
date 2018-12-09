@@ -27,9 +27,6 @@ let package = Package(
     targets: [
         .target(
             name: "LifeServer",
-            dependencies: ["Socket"]),
-        .testTarget(
-            name: "LifeServerTests",
-            dependencies: ["LifeServer"])
+            dependencies: ["Socket"])
     ]
 )
