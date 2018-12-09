@@ -15,58 +15,6 @@
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
-/*
- Expected JSON messages format
- 
- For Login:
- {
-    "login": {
-        "userName" : "name"
-    }
- }
- 
- responses:
- {
-     "status": true,
-     "userId": "\(user.userId)",
-     "message": "User \(user.name) logged in sucessfully"
- }
- 
- {
-    "status": false,
-    "message": "Failed to login"
- }
- 
- 
- For user creation:
- {
-    "create": {
-        "userName" : "name",
-        "color" : {
-            "r" : 255,
-            "g" : 255,
-            "b" : 255
-        }
-    }
- }
- 
- responses:
- {
-    "status": true,
-    "userId": "\(user.userId)",
-    "message": "User \(user.name) created sucessfully"
- }
- 
- {
-    "status": false,
-    "message": "Failed to create new user"
- }
- 
- Test JSONs:
- {"create":{"userName":"abc","color":{"r":12,"g":11,"b":10}}}
- {"login":{"userName":"abc"}}
-*/
-
 import Foundation
 
 protocol SessionManagerDelegate {
@@ -91,17 +39,10 @@ enum SessionManagerError : Error {
     case NoSessionForConnection
 }
 
-struct SessionResponse: Codable {
-    var status: Bool
-    var userId: Int
-    var message: String
+struct MessageWrapper<T>: Codable where T:Codable {
+    var type: String
+    var data: T
 }
-
-struct SessionErrorResponse: Codable {
-    var status: Bool
-    var message: String
-}
-
 
 class SessionManager : ServerDelegate {
     public var delegate = MulticastDelegate<SessionManagerDelegate>()
@@ -197,15 +138,15 @@ class SessionManager : ServerDelegate {
             }
             
             // Notify client
-            server?.sendMessage(usingConnection:connectionId,
-                                codableObj:SessionResponse(status: true, userId: user.userId, message: "User \(user.name) created sucessfully"))
+            let message = MessageWrapper(type: "userCreated", data: user)
+            server?.sendMessage(usingConnection:connectionId, codableObj:message)
         }
         catch {
             print("Failed to create new user: \(error)")
             
             // Notify client about error
-            server?.sendMessage(usingConnection:connectionId,
-                                codableObj:SessionErrorResponse(status: false, message: "Failed to create new user: \(error)"))
+            let message = MessageWrapper(type: "userCreationError", data: "Failed to create new user: \(error)")
+            server?.sendMessage(usingConnection:connectionId, codableObj:message)
         }
     }
     
@@ -217,15 +158,15 @@ class SessionManager : ServerDelegate {
             
             let uidVsCon = safeGetUidVsCon()
             
-            if uidVsCon[connectionId] == userId {
+            guard uidVsCon[connectionId] != userId else {
                 throw SessionManagerError.UserAlreadyLoggedIn
             }
             
-            if uidVsCon[connectionId] != kNoUserId {
+            guard uidVsCon[connectionId] == kNoUserId else {
                 throw SessionManagerError.AnotherUserAlreadyLoggedIn
             }
             
-            if let _ = uidVsCon.values.first(where:{$0 == userId}) {
+            guard uidVsCon.values.first(where:{$0 == userId}) == nil else {
                 throw SessionManagerError.UserAlreadyLoggedInOnOtherConnection
             }
             
@@ -238,8 +179,8 @@ class SessionManager : ServerDelegate {
             }
             
             // Notify client
-            server?.sendMessage(usingConnection:connectionId,
-                                codableObj:SessionResponse(status: true, userId: user.userId, message: "User \(user.name) logged in sucessfully"))
+            let message = MessageWrapper(type: "userLoggedIn", data: user)
+            server?.sendMessage(usingConnection:connectionId, codableObj:message)
             
             // Notify delegates
             delegate.invoke { $0.userLoggedIn(userId) }
@@ -248,8 +189,8 @@ class SessionManager : ServerDelegate {
             print("Failed to login: \(error)")
             
             // Notify client about error
-            server?.sendMessage(usingConnection:connectionId,
-                                codableObj:SessionErrorResponse(status: false, message: "Failed to login: \(error)"))
+            let message = MessageWrapper(type: "userLoginError", data: "Failed to login: \(error)")
+            server?.sendMessage(usingConnection:connectionId, codableObj:message)
         }
     }
     
@@ -264,12 +205,16 @@ class SessionManager : ServerDelegate {
                 throw SessionManagerError.NoSessionForConnection
             }
             
-            if connectedUserId == kNoUserId {
+            guard connectedUserId != kNoUserId else {
                 throw SessionManagerError.UserIsNotLoggedIn
             }
             
-            if connectedUserId != userId {
+            guard connectedUserId == userId else {
                 throw SessionManagerError.InvalidUserIdForLogout
+            }
+            
+            guard let user = usersManager?.getUser(withId: userId) else {
+                throw SessionManagerError.UserDoesntExist
             }
             
             threadSafe.performAsyncBarrier { [unowned self] in
@@ -277,8 +222,8 @@ class SessionManager : ServerDelegate {
             }
             
             // Notify client
-            server?.sendMessage(usingConnection:connectionId,
-                                codableObj:SessionResponse(status: true, userId: userId, message: "User logged out sucessfully"))
+            let message = MessageWrapper(type: "userLoggedOut", data: user)
+            server?.sendMessage(usingConnection:connectionId, codableObj:message)
             
             // Notify delegates
             delegate.invoke { $0.userLoggedOut(userId) }
@@ -287,8 +232,8 @@ class SessionManager : ServerDelegate {
             print("Failed to logout: \(error)")
             
             // Notify client about error
-            server?.sendMessage(usingConnection:connectionId,
-                                codableObj:SessionErrorResponse(status: false, message: "Failed to logout: \(error)"))
+            let message = MessageWrapper(type: "userLogoutError", data: "Failed to logout: \(error)")
+            server?.sendMessage(usingConnection:connectionId, codableObj:message)
         }
     }
 }

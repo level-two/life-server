@@ -29,20 +29,6 @@ struct ChatMessage : Codable {
     var message: String
 }
 
-struct BroadcastChatMessage : Codable {
-    var chatMessage: ChatMessage
-}
-
-struct RecentChatMessages : Codable {
-    var status: Bool
-    var recentMessages: [ChatMessage]
-}
-
-struct ChatErrorResponse: Codable {
-    var status: Bool
-    var message: String
-}
-
 public class Chat : SessionManagerDelegate {
     weak var sessionManager: SessionManager?
     weak var usersManager: UsersManager?
@@ -149,8 +135,8 @@ public class Chat : SessionManagerDelegate {
                 self.recentMessages.remove(at: 0)
             }
             
-            let broadcastChatMessage = BroadcastChatMessage(chatMessage: chatMessage)
-            sessionManager?.sendMessageBroadcast(broadcastChatMessage)
+            let message = MessageWrapper(type: "chatMessage", data: chatMessage)
+            sessionManager?.sendMessageBroadcast(message)
             
             seiralQueue.async { [unowned self, chatMessage] in
                 do {
@@ -165,14 +151,14 @@ public class Chat : SessionManagerDelegate {
             print("Chat: Failed to process incoming message: \(error)")
             
             // Notify client about error
-            sessionManager?.sendMessage(connectionId,
-                                        codableObj: ChatErrorResponse(status: false, message: "Failed to process incoming message: \(error)"))
+            let message = MessageWrapper(type: "chatError", data: "Failed to process incoming message: \(error)")
+            sessionManager?.sendMessage(connectionId, codableObj: message)
         }
     }
     
     func processChatRecentMessagesRequest(withConnection connectionId:Int32, user userId:Int) {
-        let recentChatMessages = RecentChatMessages(status: true, recentMessages: self.recentMessages)
-        sessionManager?.sendMessage(connectionId, codableObj:recentChatMessages)
+        let message = MessageWrapper(type: "recentChatMessages", data: self.recentMessages)
+        sessionManager?.sendMessage(connectionId, codableObj:message)
     }
     
     func processChatMessagesRequest(withConnection connectionId:Int32, user userId:Int, request:[String:Any]) {
@@ -195,15 +181,15 @@ public class Chat : SessionManagerDelegate {
                 }
             }
             
-            sessionManager?.sendMessage(connectionId,
-                                        codableObj: RecentChatMessages(status: true, recentMessages: chatMessages))
+            let message = MessageWrapper(type: "chatOldMessages", data: chatMessages)
+            sessionManager?.sendMessage(connectionId, codableObj: message)
         }
         catch {
             print("Chat: Failed to process messages request: \(error)")
             
             // Notify client about error
-            sessionManager?.sendMessage(connectionId,
-                                        codableObj: ChatErrorResponse(status: false, message: "Failed to process incoming message: \(error)"))
+            let message = MessageWrapper(type: "chatError", data: "Failed to process incoming message: \(error)")
+            sessionManager?.sendMessage(connectionId, codableObj: message)
         }
     }
     
