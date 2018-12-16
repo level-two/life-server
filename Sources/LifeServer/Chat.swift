@@ -69,7 +69,7 @@ public class Chat : SessionManagerDelegate {
         // Load recent messages and messages index
         var logIndexFileData = logIndexFileHandle.readDataToEndOfFile()
         self.logIndex = logIndexFileData.withUnsafeBytes { (pointer: UnsafePointer<Int>) -> [Int] in
-            let buffer = UnsafeBufferPointer(start: pointer, count: logIndexFileData.count/4)
+            let buffer = UnsafeBufferPointer(start: pointer, count: logIndexFileData.count/MemoryLayout<Int>.size)
             return Array<Int>(buffer)
         }
         
