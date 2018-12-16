@@ -16,249 +16,173 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
-import Socket
+import Dispatch
+import NIO
+import NIOFoundationCompat
 
 protocol ServerDelegate {
-    func onConnectionEstablished(withId connectionId:Int32)
-    func onConnection(withId connectionId:Int32, received message:[String:Any])
-    func onConnectionClosed(withId connectionId:Int32)
+    func onConnectionEstablished(withId connectionId:Int)
+    func onConnection(withId connectionId:Int, received message:[String:Any])
+    func onConnectionClosed(withId connectionId:Int)
+}
+
+extension Channel {
+    var channelId: Int {
+        return ObjectIdentifier(self).hashValue
+    }
+}
+
+final class JsonDes: ChannelInboundHandler {
+    public typealias InboundIn = ByteBuffer
+    public typealias ChannelEventHandler = (Int, ChannelEvent, [String:Any]?) -> Void
+    
+    enum ChannelEvent {
+        case channelOpened
+        case channelClosed
+        case channelRead
+    }
+    
+    public let channelId: Int
+    private let channelEventHandler: ChannelEventHandler
+    
+    init(channelId: Int, channelEventHandler: @escaping ChannelEventHandler) {
+        self.channelId = channelId
+        self.channelEventHandler = channelEventHandler
+    }
+    
+    public func channelActive(ctx: ChannelHandlerContext) {
+        self.channelEventHandler(self.channelId, .channelOpened, nil)
+    }
+    
+    public func channelInactive(ctx: ChannelHandlerContext) {
+        self.channelEventHandler(self.channelId, .channelClosed, nil)
+    }
+    
+    public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+        let byteBuf = self.unwrapInboundIn(data)
+        let readData = byteBuf.getData(at:byteBuf.readerIndex, length:byteBuf.readableBytes)!
+        
+        guard let jsonObject = try? JSONSerialization.jsonObject(with: readData, options: []) else { return }
+        guard let message = jsonObject as? [String:Any] else { return }
+        
+        print(message)
+        self.channelEventHandler(self.channelId, .channelRead, message)
+    }
+    
+    public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+        print("error: ", error)
+        ctx.close(promise: nil)
+    }
+}
+
+final class JsonSer: ChannelOutboundHandler {
+    public typealias OutboundIn = [String:Any]
+    public typealias OutboundOut = ByteBuffer
+    
+    public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+        let message = self.unwrapOutboundIn(data)
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: message, options: .prettyPrinted) else { return }
+        guard let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        
+        var buffer = ctx.channel.allocator.buffer(capacity: jsonString.count)
+        buffer.write(string: jsonString)
+        //ctx.channel.writeAndFlush(buffer, promise: nil)
+        ctx.writeAndFlush(self.wrapOutboundOut(buffer), promise: promise)
+    }
+    
+    public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+        print("error: ", error)
+        ctx.close(promise: nil)
+    }
 }
 
 class Server {
-    let bufferSize = 4096
-    let port: Int
-    var listenSocket: Socket? = nil
-    var connectedSockets: [Socket]
-    
-    var messagesToSend = [Int32:[Data]]()
-    
-    var stopTasks: Bool
-    var isListeningTaskFinished: Bool
-    var isConnectionTaskFinished: Bool
-    
-    let threadSafe = ThreadSafeHelper(withQueueName: "com.yauheni-lychkouski.life-server.socketLockQueue")
     public var delegate = MulticastDelegate<ServerDelegate>()
+    
+    let port: Int
+    var group: MultiThreadedEventLoopGroup?
+    var listenChannel: Channel?
+    let channelsSyncQueue = DispatchQueue(label: "channelsQueue")
+    var channels = [Int:Channel]()
     
     init(port: Int) {
         self.port = port
-        self.connectedSockets = []
+    }
+    
+    func runServer() throws {
+        self.group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         
-        stopTasks = false
-        isListeningTaskFinished = false
-        isConnectionTaskFinished = false
+        let channelEventHandler: JsonDes.ChannelEventHandler = { [unowned self] channelId, channelEventType, message in
+            switch channelEventType {
+            case .channelOpened:
+                self.delegate.invoke { $0.onConnectionEstablished(withId: channelId) }
+            case .channelClosed:
+                self.delegate.invoke { $0.onConnectionClosed(withId: channelId) }
+            case .channelRead:
+                guard let message = message else { return }
+                self.delegate.invoke { $0.onConnection(withId: channelId, received: message) }
+            }
+        }
+        
+        let bootstrap = ServerBootstrap(group: group!)
+            // Specify backlog and enable SO_REUSEADDR for the server itself
+            .serverChannelOption(ChannelOptions.backlog, value: 256)
+            .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            
+            // Set the handlers that are applied to the accepted Channels
+            .childChannelInitializer { [unowned self] channel in
+                _ = channel.closeFuture.map { _ in
+                    self.channelsSyncQueue.async {
+                        self.channels.removeValue(forKey: channel.channelId)
+                    }
+                }
+                
+                self.channelsSyncQueue.async {
+                    self.channels[channel.channelId] = channel
+                }
+                
+                return channel.pipeline.add(handler:JsonSer()).then {
+                    channel.pipeline.add(handler:
+                        JsonDes(channelId:channel.channelId, channelEventHandler:channelEventHandler))
+                }
+            }
+            
+            // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
+            .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
+            .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
+            .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
+        
+        self.listenChannel = try bootstrap.bind(host: "localhost", port: port).wait()
+        
+        guard let localAddress = listenChannel?.localAddress else {
+            fatalError("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")
+        }
+        print("Server started and listening on \(localAddress)")
     }
     
     deinit {
         // Close all open sockets...
-        shutdownServer()
+        //try! self.listenChannel?.close().wait()
+        try! self.group?.syncShutdownGracefully()
+    }
+}
+
+extension Server {
+    public func send(to channelId:Int, message: [String:Any]) {
+        var channel: Channel?
+        self.channelsSyncQueue.sync {
+            channel = self.channels[channelId]
+        }
+        channel?.write(message, promise:nil)
     }
     
-    public func run() {
-        serverRunloop()
-        serveConnections()
-    }
-    
-    func serverRunloop() {
-        self.isListeningTaskFinished = true
-        
-        let queue = DispatchQueue.global(qos: .userInteractive)
-        queue.async { [unowned self] in
-            self.isListeningTaskFinished = false
-            
-            do {
-                // Create an IPV4 socket...
-                try self.listenSocket = Socket.create(family: .inet)
-                guard let socket = self.listenSocket else {
-                    print("Failed to create listening socket...")
-                    return
-                }
-                
-                try socket.listen(on: self.port)
-                print("Listening on port: \(socket.listeningPort)")
-                
-                while !self.stopTasks {
-                    var newSocket: Socket
-                    do {
-                        newSocket = try socket.acceptClientConnection()
-                    }
-                    catch {
-                        print("Failed to accept client connection: \(error)")
-                        continue
-                    }
-                    
-                    try newSocket.setBlocking(mode: false)
-                    
-                    print("Accepted connection from: \(newSocket.remoteHostname) on port \(newSocket.remotePort)")
-                    print("Socket Signature: \(String(describing: newSocket.signature?.description))")
-                    
-                    // Add the new socket to the list of connected sockets...
-                    
-                    self.threadSafe.performAsyncBarrier { [unowned self, newSocket] in
-                        self.connectedSockets.append(newSocket)
-                    }
-                    
-                    self.delegate.invoke { $0.onConnectionEstablished(withId:newSocket.socketfd) }
-                }
-            }
-            catch {
-                if let socketError = error as? Socket.Error {
-                    print("Error reported: \(socketError.description)")
-                }
-                else {
-                    print("Unexpected error: \(error)")
-                }
-                // Shutdown server in case of listening socket errors
-                self.isListeningTaskFinished = true
-                self.shutdownServer()
-            }
-            
-            self.isListeningTaskFinished = true
+    public func sendBroadcast(message: [String:Any]) {
+        var channels: Dictionary<Int, Channel>.Values?
+        self.channelsSyncQueue.sync {
+            channels = self.channels.values
         }
-    }
-    
-    func serveConnections() {
-        isConnectionTaskFinished = true
-        
-        // Get the global concurrent queue...
-        let queue = DispatchQueue.global(qos: .default)
-        
-        // Create the run loop work item and dispatch to the default priority global queue...
-        queue.async { [unowned self] in
-            self.isConnectionTaskFinished = false
-            
-            while !self.stopTasks {
-                var readData = Data(capacity: self.bufferSize)
-                
-                var closedSocketIds = [Int32]()
-                
-                self.threadSafe.performSyncBarrier { [unowned self] in
-                    self.connectedSockets
-                        .filter({ $0.remoteConnectionClosed })
-                        .forEach({
-                            let socketfd = $0.socketfd
-                            print("Connection at socket \(socketfd) closed")
-                            $0.close()
-                            closedSocketIds.append(socketfd)
-                        })
-                    self.connectedSockets.removeAll(where: { $0.remoteConnectionClosed } )
-                }
-                
-                closedSocketIds.forEach( { [unowned self] in
-                    let socketfd = $0
-                    self.delegate.invoke { $0.onConnectionClosed(withId:socketfd) }
-                })
-                
-                // get sockets list copy
-                var connectedSockets = [Socket]()
-                self.threadSafe.performSyncConcurrent { [unowned self] in
-                    connectedSockets = self.connectedSockets
-                }
-                
-                // Check connection status here
-                let (readableSockets, writeableSockets) : ([Socket], [Socket])
-                do {
-                    (readableSockets, writeableSockets) = try Socket.checkStatus(for: connectedSockets)
-                }
-                catch {
-                    print("Failed to check sockets statuses: \(error)")
-                    continue
-                }
-                
-                for socket in readableSockets {
-                    var bytesRead = 0
-                    do {
-                        bytesRead = try socket.read(into: &readData)
-                    }
-                    catch {
-                        print("Failed read data from the socket: \(error)")
-                        continue
-                    }
-                    
-                    if bytesRead > 0 {
-                        print("Socket \(socket.socketfd) received data: \(String(data:readData, encoding:.utf8) ?? "nil")")
-                        
-                        var dic: [String: Any]?
-                        do {
-                            dic = try JSONSerialization.jsonObject(with: readData, options: []) as? [String:Any]
-                        } catch {
-                            print("Failed to decode JSON: \(error)")
-                            continue
-                        }
-                        
-                        if let msgDic = dic {
-                            self.delegate.invoke { $0.onConnection(withId:socket.socketfd, received:msgDic) }
-                        }
-                    }
-                }
-                
-                self.threadSafe.performSyncBarrier { [unowned self] in
-                    var keysForDelete = [Int32]()
-                    
-                    for (socketfd, messages) in self.messagesToSend {
-                        guard let socket = writeableSockets.first(where: { $0.socketfd == socketfd }),
-                            let data = messages.first
-                            else { continue }
-                        
-                        do {
-                            try socket.write(from:data)
-                        }
-                        catch let error {
-                            print("Failed to send message to the socket \(socketfd): \(error)")
-                        }
-                        
-                        if (messages.count <= 1) {
-                            keysForDelete.append(socketfd)
-                        }
-                        else {
-                            self.messagesToSend[socketfd]?.removeFirst()
-                        }
-                    }
-                    
-                    for key in keysForDelete {
-                        self.messagesToSend.removeValue(forKey: key)
-                    }
-                }
-            }
-           
-            self.isConnectionTaskFinished = true
-        }
-    }
-    
-    public func sendMessage<T:Codable>(usingConnection connectionId:Int32, codableObj:T) {
-        do {
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = .prettyPrinted
-            let jsonData = try encoder.encode(codableObj)
-            
-            self.threadSafe.performAsyncBarrier { [unowned self, connectionId, jsonData] in
-                if self.messagesToSend[connectionId] != nil {
-                    self.messagesToSend[connectionId]!.append(jsonData)
-                }
-                else {
-                    self.messagesToSend[connectionId] = [jsonData]
-                }
-            }
-        }
-        catch {
-            print("Failed to serialize dictionary to JSON data: \(error)")
-        }
-    }
-    
-    func shutdownServer() {
-        print("Shutting donw server")
-        
-        self.stopTasks = true
-        
-        while (!self.isListeningTaskFinished && !self.isConnectionTaskFinished) {
-            print("Waiting for all tasks to be finished")
-            usleep(10000)
-        }
-        
-        // Close all open sockets...
-        self.threadSafe.performSyncBarrier { [unowned self] in
-            self.connectedSockets.forEach({ $0.close() })
-            self.connectedSockets = []
-        }
-        listenSocket?.close()
+        channels?.forEach { $0.write(message, promise:nil) }
     }
 }

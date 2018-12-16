@@ -37,26 +37,21 @@ public class Chat : SessionManagerDelegate {
     
     var recentMessages: [ChatMessage]
     var lastMessageId: Int
-    var logIndex: [Int32]
+    var logIndex: [Int]
     let kNumRecentMessages = 50
     
     var logFileHandle: FileHandle
     var logIndexFileHandle: FileHandle
     
-    init?(sessionManager: SessionManager, usersManager:UsersManager) throws {
+    init?(sessionManager: SessionManager, usersManager:UsersManager, documentsUrl:URL) throws {
         self.sessionManager = sessionManager
         self.usersManager = usersManager
         self.recentMessages = []
         self.lastMessageId = 0
         self.logIndex = []
         
-        #if os(Linux)
-            let url = URL(fileURLWithPath: "/var/lib")
-        #elseif os(macOS)
-            let url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        #endif
-        let logFileUrl = url.appendingPathComponent("LifeServer/ChatLog.db")
-        let logIndexFileUrl = url.appendingPathComponent("LifeServer/ChatLogIndex.db")
+        let logFileUrl = documentsUrl.appendingPathComponent("ChatLog.db")
+        let logIndexFileUrl = documentsUrl.appendingPathComponent("ChatLogIndex.db")
         
         // Create files if they don't exist
         if FileManager.default.fileExists(atPath: logFileUrl.path) == false {
@@ -73,9 +68,9 @@ public class Chat : SessionManagerDelegate {
         
         // Load recent messages and messages index
         var logIndexFileData = logIndexFileHandle.readDataToEndOfFile()
-        self.logIndex = logIndexFileData.withUnsafeBytes { (pointer: UnsafePointer<Int32>) -> [Int32] in
+        self.logIndex = logIndexFileData.withUnsafeBytes { (pointer: UnsafePointer<Int>) -> [Int] in
             let buffer = UnsafeBufferPointer(start: pointer, count: logIndexFileData.count/4)
-            return Array<Int32>(buffer)
+            return Array<Int>(buffer)
         }
         
         self.lastMessageId = self.logIndex.count
@@ -98,7 +93,7 @@ public class Chat : SessionManagerDelegate {
         self.logIndexFileHandle.closeFile()
     }
     
-    public func gotMessage(forConnection connectionId:Int32, user userId:Int, msg:[String:Any]) {
+    public func gotMessage(forConnection connectionId:Int, user userId:Int, msg:[String:Any]) {
         if let messageText = msg["sendMessage"] as? String {
             processChatMessage(withConnection:connectionId, user:userId, messageText:messageText)
         }
@@ -118,7 +113,7 @@ public class Chat : SessionManagerDelegate {
         
     }
     
-    func processChatMessage(withConnection connectionId:Int32, user userId:Int, messageText:String) {
+    func processChatMessage(withConnection connectionId:Int, user userId:Int, messageText:String) {
         do {
             guard let user = usersManager?.getUser(withId: userId) else {
                 throw ChatError.MessageFromAnonymousUser
@@ -135,10 +130,10 @@ public class Chat : SessionManagerDelegate {
                 self.recentMessages.remove(at: 0)
             }
             
-            let message = MessageWrapper(type: "chatMessage", data: chatMessage)
-            sessionManager?.sendMessageBroadcast(message)
+            let message = ["chatMessage": ["messageId":messageId, "userName":userName, "message":messageText]]
+            sessionManager?.sendMessageBroadcast(message:message)
             
-            seiralQueue.async { [unowned self, chatMessage] in
+            seiralQueue.async { [unowned self] in
                 do {
                     try self.storeMessage(chatMessage: chatMessage)
                 }
@@ -151,17 +146,18 @@ public class Chat : SessionManagerDelegate {
             print("Chat: Failed to process incoming message: \(error)")
             
             // Notify client about error
-            let message = MessageWrapper(type: "chatError", data: "Failed to process incoming message: \(error)")
-            sessionManager?.sendMessage(connectionId, codableObj: message)
+            let message = ["chatError": "Failed to process incoming message: \(error)"]
+            sessionManager?.sendMessage(connectionId:connectionId, message:message)
         }
     }
     
-    func processChatRecentMessagesRequest(withConnection connectionId:Int32, user userId:Int) {
-        let message = MessageWrapper(type: "recentChatMessages", data: self.recentMessages)
-        sessionManager?.sendMessage(connectionId, codableObj:message)
+    func processChatRecentMessagesRequest(withConnection connectionId:Int, user userId:Int) {
+        let messagesArray = self.recentMessages.map { ["messageId":$0.messageId, "userName":$0.userName, "message":$0.message] }
+        let message = ["recentChatMessages": messagesArray]
+        sessionManager?.sendMessage(connectionId:connectionId, message:message)
     }
     
-    func processChatMessagesRequest(withConnection connectionId:Int32, user userId:Int, request:[String:Any]) {
+    func processChatMessagesRequest(withConnection connectionId:Int, user userId:Int, request:[String:Any]) {
         do {
             guard
                 let fromId = request["fromId"] as? Int,
@@ -181,21 +177,22 @@ public class Chat : SessionManagerDelegate {
                 }
             }
             
-            let message = MessageWrapper(type: "chatOldMessages", data: chatMessages)
-            sessionManager?.sendMessage(connectionId, codableObj: message)
+            let messagesArray = chatMessages.map { ["messageId":$0.messageId, "userName":$0.userName, "message":$0.message] }
+            let message = ["chatOldMessages": messagesArray]
+            sessionManager?.sendMessage(connectionId:connectionId, message:message)
         }
         catch {
             print("Chat: Failed to process messages request: \(error)")
             
             // Notify client about error
-            let message = MessageWrapper(type: "chatError", data: "Failed to process incoming message: \(error)")
-            sessionManager?.sendMessage(connectionId, codableObj: message)
+            let message = ["chatError": "Failed to process incoming message: \(error)"]
+            sessionManager?.sendMessage(connectionId:connectionId, message:message)
         }
     }
     
     func storeMessage(chatMessage:ChatMessage) throws {
         let logFileSize = self.logFileHandle.offsetInFile
-        var index = Int32(logFileSize)
+        var index = Int(logFileSize)
         self.logIndex.append(index)
         self.logIndexFileHandle.write(Data(bytes:&index, count:MemoryLayout.size(ofValue:index)))
         

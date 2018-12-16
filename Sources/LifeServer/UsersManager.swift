@@ -36,28 +36,36 @@ public enum UsersManagerError : Error {
 public class UsersManager {
     var lastUserId: Int
     var registeredUsers: [User]
+    var fileHandle: FileHandle
     
-    init() {
+    init?(documentsUrl:URL) throws {
         lastUserId = 0 // TODO Restore previous state during server startup
         registeredUsers = []
         
+        let usersFileUrl = documentsUrl.appendingPathComponent("RegisteredUsers.json")
+        
+        if FileManager.default.fileExists(atPath: usersFileUrl.path) == false {
+            FileManager.default.createFile(atPath: usersFileUrl.path, contents: "[\n]".data(using:.utf8)!, attributes: nil)
+        }
+        
+        fileHandle = try FileHandle(forUpdating: usersFileUrl)
+        let data = fileHandle.readDataToEndOfFile()
+        
         do {
-            let url = try getStoredUsersUrl()
-            
-            if FileManager.default.fileExists(atPath: url.path) {
-                let data = try Data(contentsOf: url)
-                self.registeredUsers = try JSONDecoder().decode([User].self, from: data)
-                if let lastId = registeredUsers.last?.userId {
-                    self.lastUserId = lastId
-                }
-            }
-            else {
-                FileManager.default.createFile(atPath: url.path, contents: "[\n]".data(using:.utf8)!, attributes: nil)
-            }
+            self.registeredUsers = try JSONDecoder().decode([User].self, from: data)
         }
         catch {
-            print("Failed to load registered users list: \(error)")
+            fileHandle.closeFile()
+            throw error
         }
+        
+        if let lastId = registeredUsers.last?.userId {
+            self.lastUserId = lastId
+        }
+    }
+    
+    deinit {
+        fileHandle.closeFile()
     }
     
     public func createUser(withName name:String, withColor color:Color) throws -> User {
@@ -73,28 +81,15 @@ public class UsersManager {
         registeredUsers.append(user)
         
         let userJson = try JSONEncoder().encode(user)
-        let url = try getStoredUsersUrl()
         
-        let fileHandle = try FileHandle(forUpdating: url)
-        fileHandle.seekToEndOfFile()
         fileHandle.seek(toFileOffset:fileHandle.offsetInFile-1)
         fileHandle.write(userJson)
         fileHandle.write(",\n]".data(using:.utf8)!)
-        fileHandle.closeFile()
         
         return user
     }
     
     public func getUser(withId userId:Int) -> User? {
         return registeredUsers.first(where: { $0.userId == userId })
-    }
-    
-    func getStoredUsersUrl() throws -> URL {
-        #if os(Linux)
-            let url = URL(fileURLWithPath: "/var/lib")
-        #elseif os(macOS)
-            let url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        #endif
-        return url.appendingPathComponent("LifeServer/RegisteredUsers.json")
     }
 }

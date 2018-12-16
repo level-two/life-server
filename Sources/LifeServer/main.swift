@@ -17,37 +17,24 @@
 
 import Foundation
 
-// TODO: Add first run initialization
-// TODO: Add place to handle common things like paths and preferences
+#if os(Linux)
+var url = URL(fileURLWithPath: "/var/lib")
+#elseif os(macOS)
+var url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+#endif
+url.appendPathComponent("LifeServer/")
 
-do {
-    #if os(Linux)
-    var url = URL(fileURLWithPath: "/var/lib")
-    #elseif os(macOS)
-    var url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-    #endif
-    url.appendPathComponent("LifeServer/")
+if FileManager.default.fileExists(atPath: url.path) == false {
+    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
+}
 
-    if FileManager.default.fileExists(atPath: url.path) == false {
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
-    }
-}
-catch {
-    print("Failed to create directory for internal files: \(error)")
-}
-    
 let port = 1337
 let server = Server(port: port)
-let usersManager = UsersManager()
-let sessionManager = SessionManager(withServer: server, usersManager: usersManager)
-let chat: Chat?
-do {
-    chat = try Chat(sessionManager: sessionManager, usersManager: usersManager)
-}
-catch {
-    print ("Failed to initialize Chat: \(error)")
-}
+let usersManager = try UsersManager(documentsUrl: url)
+let sessionManager = SessionManager(withServer: server, usersManager: usersManager!)
+let chat = try Chat(sessionManager: sessionManager, usersManager: usersManager!, documentsUrl: url)
 let gameplay = Gameplay()
 
-server.run()
+try server.runServer()
 dispatchMain()
+

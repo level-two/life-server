@@ -22,11 +22,12 @@ import PackageDescription
 let package = Package(
     name: "LifeServer",
     dependencies: [
-        .package(url: "https://github.com/IBM-Swift/BlueSocket.git", from:"1.0.8")
+        .package(url: "https://github.com/IBM-Swift/BlueSocket.git", from:"1.0.8"),
+        .package(url: "https://github.com/apple/swift-nio.git", from:"1.0.0")
     ],
     targets: [
         .target(
             name: "LifeServer",
-            dependencies: ["Socket"])
+            dependencies: ["Socket", "NIO", "NIOFoundationCompat"])
     ]
 )
