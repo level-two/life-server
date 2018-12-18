@@ -1,8 +1,8 @@
 //
 //  MulticastDelegate.swift
-//  LifeServer
 //
-//  Created by Yauheni Lychkouski on 11/23/18.
+//  Created by Klemen Zagar
+//  https://stackoverflow.com/a/44704228
 //
 
 import Foundation
