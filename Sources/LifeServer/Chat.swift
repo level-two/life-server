@@ -29,7 +29,7 @@ struct ChatMessage : Codable {
     var message: String
 }
 
-public class Chat : SessionManagerDelegate {
+public class Chat {
     weak var sessionManager: SessionManager?
     weak var usersManager: UsersManager?
     
@@ -64,7 +64,9 @@ public class Chat : SessionManagerDelegate {
         self.logFileHandle = try FileHandle(forUpdating: logFileUrl)
         self.logIndexFileHandle = try FileHandle(forUpdating: logIndexFileUrl)
         
-        self.sessionManager?.delegate.add(delegate: self)
+        self.sessionManager?.userLoginEvent.addHandler(target: self, handler: Chat.userLoggedIn)
+        self.sessionManager?.userLogoutEvent.addHandler(target: self, handler: Chat.userLoggedOut)
+        self.sessionManager?.messageEvent.addHandler(target: self, handler: Chat.gotMessage)
         
         // Load recent messages and messages index
         var logIndexFileData = logIndexFileHandle.readDataToEndOfFile()
@@ -93,7 +95,7 @@ public class Chat : SessionManagerDelegate {
         self.logIndexFileHandle.closeFile()
     }
     
-    public func gotMessage(forConnection connectionId:Int, user userId:Int, msg:[String:Any]) {
+    public func gotMessage(connectionId:Int, userId:Int, msg:[String:Any]) {
         if let messageText = msg["sendMessage"] as? String {
             processChatMessage(withConnection:connectionId, user:userId, messageText:messageText)
         }
@@ -105,11 +107,11 @@ public class Chat : SessionManagerDelegate {
         }
     }
     
-    public func userLoggedIn(_ userId:Int) {
+    public func userLoggedIn(userId:Int) {
         
     }
     
-    public func userLoggedOut(_ userId:Int) {
+    public func userLoggedOut(userId:Int) {
         
     }
     

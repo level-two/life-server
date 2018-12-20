@@ -17,13 +17,6 @@
 
 import Foundation
 
-protocol SessionManagerDelegate {
-    func gotMessage(forConnection connectionId:Int, user userId:Int, msg:[String:Any])
-    //func anonymousConnectionEstablished()
-    func userLoggedIn(_ userId:Int)
-    func userLoggedOut(_ userId:Int)
-}
-
 enum SessionManagerError : Error {
     case InvalidUserCreateRequest
     case InvalidUserLoginRequest
@@ -39,8 +32,10 @@ enum SessionManagerError : Error {
     case NoSessionForConnection
 }
 
-class SessionManager : ServerDelegate {
-    public var delegate = MulticastDelegate<SessionManagerDelegate>()
+class SessionManager {
+    public let messageEvent = Event3<Int, Int, [String:Any]>()
+    public let userLoginEvent = Event<Int>()
+    public let userLogoutEvent = Event<Int>()
     
     private weak var server: Server?
     private weak var usersManager: UsersManager?
@@ -51,7 +46,9 @@ class SessionManager : ServerDelegate {
     // MARK: Public methods
     init(withServer server:Server, usersManager:UsersManager) {
         self.server = server
-        self.server?.delegate.add(delegate:self)
+        self.server?.connectionClosedEvent.addHandler(target: self, handler: SessionManager.onConnectionClosed)
+        self.server?.connectionEstablishedEvent.addHandler(target: self, handler: SessionManager.onConnectionEstablished)
+        self.server?.connectionReceivedMessageEvent.addHandler(target: self, handler: SessionManager.onConnectionReceivedMessage)
         self.usersManager = usersManager
     }
     
@@ -69,14 +66,14 @@ class SessionManager : ServerDelegate {
     }
     
     // MARK: ConnectionDelegate implementation
-    public func onConnectionEstablished(withId connectionId:Int) {
+    public func onConnectionEstablished(connectionId:Int) {
         // Create anonymous session
         threadSafe.performAsyncBarrier { [unowned self] in
             self.userIdForConnectionId[connectionId] = self.kNoUserId
         }
     }
     
-    public func onConnection(withId connectionId:Int, received message:[String:Any]) {
+    public func onConnectionReceivedMessage(connectionId:Int, message:[String:Any]) {
         let uidVsCon = safeGetUidVsCon()
         
         if let createDic = message["create"] as? [String:Any] {
@@ -89,18 +86,18 @@ class SessionManager : ServerDelegate {
             logoutUser(withDic:logoutDic, connectionId:connectionId)
         }
         else if let userId = uidVsCon[connectionId] {
-            delegate.invoke { $0.gotMessage(forConnection: connectionId, user: userId, msg: message) }
+            self.messageEvent.raise(with: connectionId, userId, message)
         }
     }
     
-    public func onConnectionClosed(withId connectionId:Int) {
+    public func onConnectionClosed(connectionId:Int) {
         var userId: Int?
         threadSafe.performSyncBarrier { [unowned self] in
             userId = self.userIdForConnectionId.removeValue(forKey:connectionId)
         }
         guard let uid = userId else { return }
         if uid != kNoUserId {
-            delegate.invoke { $0.userLoggedOut(uid) }
+            self.userLogoutEvent.raise(with: uid)
         }
     }
     
@@ -174,8 +171,8 @@ class SessionManager : ServerDelegate {
             let message = ["userLoggedIn": ["userId":user.userId, "userName":user.name]]
             server?.send(to:connectionId, message:message)
             
-            // Notify delegates
-            delegate.invoke { $0.userLoggedIn(userId) }
+            // Send event
+            self.userLoginEvent.raise(with: userId)
         }
         catch {
             print("Failed to login: \(error)")
@@ -217,8 +214,8 @@ class SessionManager : ServerDelegate {
             let message = ["userLoggedOut": ["userId":user.userId, "userName":user.name]]
             server?.send(to:connectionId, message:message)
             
-            // Notify delegates
-            delegate.invoke { $0.userLoggedOut(userId) }
+            // Send event
+            self.userLogoutEvent.raise(with: userId)
         }
         catch {
             print("Failed to logout: \(error)")

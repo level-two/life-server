@@ -20,12 +20,6 @@ import Dispatch
 import NIO
 import NIOFoundationCompat
 
-protocol ServerDelegate {
-    func onConnectionEstablished(withId connectionId:Int)
-    func onConnection(withId connectionId:Int, received message:[String:Any])
-    func onConnectionClosed(withId connectionId:Int)
-}
-
 extension Channel {
     var channelId: Int {
         return ObjectIdentifier(self).hashValue
@@ -98,7 +92,9 @@ final class JsonSer: ChannelOutboundHandler {
 }
 
 class Server {
-    public var delegate = MulticastDelegate<ServerDelegate>()
+    public let connectionEstablishedEvent = Event<Int>()
+    public let connectionClosedEvent = Event<Int>()
+    public let connectionReceivedMessageEvent = Event2<Int, [String:Any]>()
     
     let port: Int
     var group: MultiThreadedEventLoopGroup?
@@ -116,12 +112,12 @@ class Server {
         let channelEventHandler: JsonDes.ChannelEventHandler = { [unowned self] channelId, channelEventType, message in
             switch channelEventType {
             case .channelOpened:
-                self.delegate.invoke { $0.onConnectionEstablished(withId: channelId) }
+                self.connectionEstablishedEvent.raise(with: channelId)
             case .channelClosed:
-                self.delegate.invoke { $0.onConnectionClosed(withId: channelId) }
+                self.connectionClosedEvent.raise(with: channelId)
             case .channelRead:
                 guard let message = message else { return }
-                self.delegate.invoke { $0.onConnection(withId: channelId, received: message) }
+                self.connectionReceivedMessageEvent.raise(with: channelId, message)
             }
         }
         
