@@ -25,7 +25,7 @@ var url = try FileManager.default.url(for: .applicationSupportDirectory, in: .us
 url.appendPathComponent("LifeServer/")
 
 if FileManager.default.fileExists(atPath: url.path) == false {
-    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
+    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
 }
 
 let port = 1337
