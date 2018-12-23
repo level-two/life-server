@@ -135,9 +135,9 @@ public class Chat {
             let message = ["chatMessage": ["messageId":messageId, "userName":userName, "message":messageText]]
             sessionManager?.sendMessageBroadcast(message:message)
             
-            seiralQueue.async { [unowned self] in
+            seiralQueue.async { [weak self] in
                 do {
-                    try self.storeMessage(chatMessage: chatMessage)
+                    try self?.storeMessage(chatMessage: chatMessage)
                 }
                 catch {
                     print("Failed to store message: \(error)")
@@ -168,19 +168,19 @@ public class Chat {
                     throw ChatError.InvalidChatMessagesRequest
             }
                 
-            var chatMessages = [ChatMessage]()
+            var chatMessages: [ChatMessage]?
             
-            seiralQueue.sync { [unowned self] in
+            seiralQueue.sync { [weak self] in
                 do {
-                    chatMessages = try self.getMessages(fromId: fromId, count: count)
+                    chatMessages = try self?.getMessages(fromId: fromId, count: count)
                 }
                 catch {
                     print("Failed to get messages: \(error)")
                 }
             }
             
-            let messagesArray = chatMessages.map { ["messageId":$0.messageId, "userName":$0.userName, "message":$0.message] }
-            let message = ["chatOldMessages": messagesArray]
+            let messagesArray = chatMessages?.map { ["messageId":$0.messageId, "userName":$0.userName, "message":$0.message] }
+            let message = ["chatOldMessages": messagesArray ?? []]
             sessionManager?.sendMessage(connectionId:connectionId, message:message)
         }
         catch {

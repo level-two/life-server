@@ -109,15 +109,15 @@ class Server {
     func runServer() throws {
         self.group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         
-        let channelEventHandler: JsonDes.ChannelEventHandler = { [unowned self] channelId, channelEventType, message in
+        let channelEventHandler: JsonDes.ChannelEventHandler = { [weak self] channelId, channelEventType, message in
             switch channelEventType {
             case .channelOpened:
-                self.connectionEstablishedEvent.raise(with: channelId)
+                self?.connectionEstablishedEvent.raise(with: channelId)
             case .channelClosed:
-                self.connectionClosedEvent.raise(with: channelId)
+                self?.connectionClosedEvent.raise(with: channelId)
             case .channelRead:
                 guard let message = message else { return }
-                self.connectionReceivedMessageEvent.raise(with: channelId, message)
+                self?.connectionReceivedMessageEvent.raise(with: channelId, message)
             }
         }
         
@@ -127,15 +127,15 @@ class Server {
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             
             // Set the handlers that are applied to the accepted Channels
-            .childChannelInitializer { [unowned self] channel in
+            .childChannelInitializer { [weak self] channel in
                 _ = channel.closeFuture.map { _ in
-                    self.channelsSyncQueue.async {
-                        self.channels.removeValue(forKey: channel.channelId)
+                    self?.channelsSyncQueue.async {
+                        self?.channels.removeValue(forKey: channel.channelId)
                     }
                 }
                 
-                self.channelsSyncQueue.async {
-                    self.channels[channel.channelId] = channel
+                self?.channelsSyncQueue.async {
+                    self?.channels[channel.channelId] = channel
                 }
                 
                 return channel.pipeline.add(handler:JsonSer()).then {

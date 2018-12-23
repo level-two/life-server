@@ -53,28 +53,23 @@ class SessionManager {
     }
     
     public func sendMessageBroadcast(message: [String:Any]) {
-        //let uidVsCon = safeGetUidVsCon()
-        //for connectionId in uidVsCon.keys {
         server?.sendBroadcast(message: message)
-        //}
     }
     
     public func sendMessage(connectionId: Int, message: [String:Any]) {
-        //let uidVsCon = safeGetUidVsCon()
-        //guard let connectionId = uidVsCon.first(where:{$1==userId})?.key else { return }
         server?.send(to: connectionId, message: message)
     }
     
     // MARK: ConnectionDelegate implementation
     public func onConnectionEstablished(connectionId:Int) {
         // Create anonymous session
-        threadSafe.performAsyncBarrier { [unowned self] in
-            self.userIdForConnectionId[connectionId] = self.kNoUserId
+        threadSafe.performAsyncBarrier { [weak self] in
+            self?.userIdForConnectionId[connectionId] = self?.kNoUserId
         }
     }
     
     public func onConnectionReceivedMessage(connectionId:Int, message:[String:Any]) {
-        let uidVsCon = safeGetUidVsCon()
+        guard let uidVsCon = safeGetUidVsCon() else { return }
         
         if let createDic = message["create"] as? [String:Any] {
             createUser(withDic:createDic, connectionId:connectionId)
@@ -92,8 +87,8 @@ class SessionManager {
     
     public func onConnectionClosed(connectionId:Int) {
         var userId: Int?
-        threadSafe.performSyncBarrier { [unowned self] in
-            userId = self.userIdForConnectionId.removeValue(forKey:connectionId)
+        threadSafe.performSyncBarrier { [weak self] in
+            userId = self?.userIdForConnectionId.removeValue(forKey:connectionId)
         }
         guard let uid = userId else { return }
         if uid != kNoUserId {
@@ -102,10 +97,10 @@ class SessionManager {
     }
     
     // MARK: Private functions
-    private func safeGetUidVsCon() -> [Int:Int] {
-        var uidVsCon = [Int:Int]()
-        threadSafe.performSyncConcurrent { [unowned self] in
-            uidVsCon = self.userIdForConnectionId
+    private func safeGetUidVsCon() -> [Int:Int]? {
+        var uidVsCon: [Int:Int]?
+        threadSafe.performSyncConcurrent { [weak self] in
+            uidVsCon = self?.userIdForConnectionId
         }
         return uidVsCon
     }
@@ -115,9 +110,9 @@ class SessionManager {
             guard
                 let name = dic["userName"] as? String,
                 let colorDic = dic["color"] as? [String:Any],
-                let r = colorDic["r"] as? Int,
-                let g = colorDic["g"] as? Int,
-                let b = colorDic["b"] as? Int
+                let r = colorDic["r"] as? Double,
+                let g = colorDic["g"] as? Double,
+                let b = colorDic["b"] as? Double
                 else {
                     throw SessionManagerError.InvalidUserCreateRequest
                 }
@@ -141,11 +136,11 @@ class SessionManager {
     
     private func loginUser(withDic dic:[String:Any], connectionId:Int) {
         do {
+            guard let uidVsCon = safeGetUidVsCon() else { return }
+            
             guard let userId = dic["userId"] as? Int else {
                 throw SessionManagerError.InvalidUserLoginRequest
             }
-            
-            let uidVsCon = safeGetUidVsCon()
             
             guard uidVsCon[connectionId] != userId else {
                 throw SessionManagerError.UserAlreadyLoggedIn
@@ -163,8 +158,8 @@ class SessionManager {
                 throw SessionManagerError.UserDoesntExist
             }
             
-            threadSafe.performAsyncBarrier { [unowned self] in
-                self.userIdForConnectionId[connectionId] = userId
+            threadSafe.performAsyncBarrier { [weak self] in
+                self?.userIdForConnectionId[connectionId] = userId
             }
             
             // Notify client
@@ -185,11 +180,12 @@ class SessionManager {
     
     private func logoutUser(withDic dic:[String:Any], connectionId:Int) {
         do {
+            guard let uidVsCon = safeGetUidVsCon() else { return }
+            
             guard let userId = dic["userId"] as? Int else {
                 throw SessionManagerError.InvalidUserLogoutRequest
             }
             
-            let uidVsCon = safeGetUidVsCon()
             guard let connectedUserId = uidVsCon[connectionId] else {
                 throw SessionManagerError.NoSessionForConnection
             }
