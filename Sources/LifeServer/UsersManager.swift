@@ -17,15 +17,9 @@
 
 import Foundation
 
-public struct Color : Codable {
-    var r: Double = 0
-    var g: Double = 0
-    var b: Double = 0
-}
-
 public struct User : Codable {
     var name: String
-    var color: Color
+    var color: [Double]
     var userId: Int
 }
 
@@ -68,7 +62,7 @@ public class UsersManager {
         fileHandle.closeFile()
     }
     
-    public func createUser(withName name:String, withColor color:Color) throws -> User {
+    public func createUser(withName name:String, withColor color:[Double]) throws -> User {
         // return nil if user with this name exists
         if let _ = registeredUsers.first(where:{ $0.name == name }) {
             throw UsersManagerError.UserAlreadyExists
@@ -91,5 +85,9 @@ public class UsersManager {
     
     public func getUser(withId userId:Int) -> User? {
         return registeredUsers.first(where: { $0.userId == userId })
+    }
+    
+    public func getUser(withName userName:String) -> User? {
+        return registeredUsers.first(where: { $0.name == userName })
     }
 }

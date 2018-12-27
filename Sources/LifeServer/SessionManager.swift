@@ -109,20 +109,19 @@ class SessionManager {
         do {
             guard
                 let name = dic["userName"] as? String,
-                let colorDic = dic["color"] as? [String:Any],
-                let r = colorDic["r"] as? Double,
-                let g = colorDic["g"] as? Double,
-                let b = colorDic["b"] as? Double
-                else {
-                    throw SessionManagerError.InvalidUserCreateRequest
-                }
+                let color = dic["color"] as? [Double],
+                color.count == 3,
+                color.filter({ $0 < 0.0 && $0 > 1.0 }).count == 0
+            else {
+                throw SessionManagerError.InvalidUserCreateRequest
+            }
             
-            guard let user = try usersManager?.createUser(withName:name, withColor:Color(r:r, g:g, b:b)) else {
+            guard let user = try usersManager?.createUser(withName:name, withColor:color) else {
                 throw SessionManagerError.CreateUserReturnedNil
             }
             
             // Notify client
-            let message = ["userCreated":["userName":name, "color":["r":r, "g":g, "b":b], "userId":user.userId]]
+            let message = ["userCreated":["userName":name, "color":color, "userId":user.userId]]
             server?.send(to:connectionId, message:message)
         }
         catch {
@@ -138,9 +137,15 @@ class SessionManager {
         do {
             guard let uidVsCon = safeGetUidVsCon() else { return }
             
-            guard let userId = dic["userId"] as? Int else {
+            guard let userName = dic["userName"] as? String else {
                 throw SessionManagerError.InvalidUserLoginRequest
             }
+            
+            guard let user = usersManager?.getUser(withName: userName) else {
+                throw SessionManagerError.UserDoesntExist
+            }
+            
+            let userId = user.userId
             
             guard uidVsCon[connectionId] != userId else {
                 throw SessionManagerError.UserAlreadyLoggedIn
@@ -154,16 +159,13 @@ class SessionManager {
                 throw SessionManagerError.UserAlreadyLoggedInOnOtherConnection
             }
             
-            guard let user = usersManager?.getUser(withId: userId) else {
-                throw SessionManagerError.UserDoesntExist
-            }
-            
             threadSafe.performAsyncBarrier { [weak self] in
                 self?.userIdForConnectionId[connectionId] = userId
             }
             
             // Notify client
-            let message = ["userLoggedIn": ["userId":user.userId, "userName":user.name]]
+            let message = ["userLoggedIn": ["userId":user.userId, "userName":user.name, "color":user.color, "sessionId":-1]]
+            
             server?.send(to:connectionId, message:message)
             
             // Send event
