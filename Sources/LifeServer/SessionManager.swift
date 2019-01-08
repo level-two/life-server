@@ -71,13 +71,13 @@ class SessionManager {
     public func onConnectionReceivedMessage(connectionId:Int, message:[String:Any]) {
         guard let uidVsCon = safeGetUidVsCon() else { return }
         
-        if let createDic = message["create"] as? [String:Any] {
+        if let createDic = message["CreateUser"] as? [String:Any] {
             createUser(withDic:createDic, connectionId:connectionId)
         }
-        else if let loginDic = message["login"] as? [String:Any] {
+        else if let loginDic = message["Login"] as? [String:Any] {
             loginUser(withDic:loginDic, connectionId:connectionId)
         }
-        else if let logoutDic = message["logout"] as? [String:Any] {
+        else if let logoutDic = message["Logout"] as? [String:Any] {
             logoutUser(withDic:logoutDic, connectionId:connectionId)
         }
         else if let userId = uidVsCon[connectionId] {
@@ -108,8 +108,9 @@ class SessionManager {
     private func createUser(withDic dic:[String:Any], connectionId:Int) {
         do {
             guard
-                let name = dic["userName"] as? String,
-                let color = dic["color"] as? [Double],
+                let userDic = dic["user"] as? [String:Any],
+                let name = userDic["userName"] as? String,
+                let color = userDic["color"] as? [Double],
                 color.count == 4,
                 color.filter({ $0 < 0.0 && $0 > 1.0 }).count == 0
             else {
@@ -121,14 +122,14 @@ class SessionManager {
             }
             
             // Notify client
-            let message = ["userCreated":["userName":name, "color":color, "userId":user.userId]]
+            let message = ["CreateUserResponse":["user":["userName":name, "color":color, "userId":user.userId]]]
             server?.send(to:connectionId, message:message)
         }
         catch {
             print("Failed to create new user: \(error)")
             
             // Notify client about error
-            let message = ["userCreationError":"Failed to create new user: \(error)"]
+            let message = ["CreateUserResponse":["error":"Failed to create new user: \(error)"]]
             server?.send(to:connectionId, message:message)
         }
     }
@@ -164,7 +165,7 @@ class SessionManager {
             }
             
             // Notify client
-            let message = ["userLoggedIn": ["userId":user.userId, "userName":user.name, "color":user.color, "sessionId":-1]]
+            let message = ["LoginResponse":["user":["userId":user.userId, "userName":user.name, "color":user.color]]]
             
             server?.send(to:connectionId, message:message)
             
@@ -175,7 +176,7 @@ class SessionManager {
             print("Failed to login: \(error)")
             
             // Notify client about error
-            let message = ["userLoginError": "Failed to login: \(error)"]
+            let message = ["LoginResponse":["error":"Failed to login: \(error)"]]
             server?.send(to:connectionId, message:message)
         }
     }
@@ -209,7 +210,7 @@ class SessionManager {
             }
             
             // Notify client
-            let message = ["userLoggedOut": ["userId":user.userId, "userName":user.name]]
+            let message = ["LogoutResponse":["user":["userId":user.userId, "userName":user.name, "color":user.color]]]
             server?.send(to:connectionId, message:message)
             
             // Send event
@@ -219,7 +220,7 @@ class SessionManager {
             print("Failed to logout: \(error)")
             
             // Notify client about error
-            let message = ["userLogoutError": "Failed to logout: \(error)"]
+            let message = ["LogoutResponse":["error":"Failed to logout: \(error)"]]
             server?.send(to:connectionId, message:message)
         }
     }

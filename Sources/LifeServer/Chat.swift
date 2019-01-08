@@ -21,12 +21,13 @@ public enum ChatError : Error {
     case MessageFromAnonymousUser
     case LogFileInvalidHandler
     case InvalidChatMessagesRequest
+    case InvalidChatMessage
 }
 
 struct ChatMessage : Codable {
     var messageId: Int
-    var userName: String
     var message: String
+    var user: User
 }
 
 public class Chat {
@@ -96,13 +97,13 @@ public class Chat {
     }
     
     public func gotMessage(connectionId:Int, userId:Int, msg:[String:Any]) {
-        if let messageText = msg["sendMessage"] as? String {
-            processChatMessage(withConnection:connectionId, user:userId, messageText:messageText)
+        if let chatMessage = msg["SendChatMessage"] as? [String:Any] {
+            processChatMessage(withConnection:connectionId, user:userId, chatMessage:chatMessage)
         }
-        else if let _ = msg["recentMessagesRequest"] as? String {
+        else if let _ = msg["GetRecentChatMessages"] as? Any {
             processChatRecentMessagesRequest(withConnection:connectionId, user:userId)
         }
-        else if let chatHistoryRequest = msg["messagesRequest"] as? [String:Any] {
+        else if let chatHistoryRequest = msg["GetChatMessages"] as? [String:Any] {
             processChatMessagesRequest(withConnection:connectionId, user:userId, request:chatHistoryRequest)
         }
     }
@@ -115,24 +116,28 @@ public class Chat {
         
     }
     
-    func processChatMessage(withConnection connectionId:Int, user userId:Int, messageText:String) {
+    func processChatMessage(withConnection connectionId:Int, user userId:Int, chatMessage:[String:Any]) {
         do {
             guard let user = usersManager?.getUser(withId: userId) else {
                 throw ChatError.MessageFromAnonymousUser
             }
-            let userName = user.name
+            
+            guard let messageText = chatMessage["message"] as? String else {
+                throw ChatError.InvalidChatMessage
+            }
+                
             
             let messageId = self.lastMessageId
             self.lastMessageId += 1
             
-            let chatMessage = ChatMessage(messageId:messageId, userName:userName, message:messageText)
+            let chatMessage = ChatMessage(messageId: messageId, message: messageText, user: user)
             
             self.recentMessages.append(chatMessage)
             if self.recentMessages.count > kNumRecentMessages {
                 self.recentMessages.remove(at: 0)
             }
             
-            let message = ["chatMessage": ["messageId":messageId, "userName":userName, "message":messageText]]
+            let message = ["ChatMessage": ["id":messageId, "message":messageText, "user":["userName":user.name, "color":user.color, "userId":user.userId]]]
             sessionManager?.sendMessageBroadcast(message:message)
             
             seiralQueue.async { [weak self] in
@@ -148,14 +153,15 @@ public class Chat {
             print("Chat: Failed to process incoming message: \(error)")
             
             // Notify client about error
-            let message = ["chatError": "Failed to process incoming message: \(error)"]
+            // TODO
+            let message = ["ChatMessageError":["error":"Failed to process incoming message: \(error)"]]
             sessionManager?.sendMessage(connectionId:connectionId, message:message)
         }
     }
     
     func processChatRecentMessagesRequest(withConnection connectionId:Int, user userId:Int) {
-        let messagesArray = self.recentMessages.map { ["messageId":$0.messageId, "userName":$0.userName, "message":$0.message] }
-        let message = ["recentChatMessages": messagesArray]
+        let messagesArray = self.recentMessages.map { ["id":$0.messageId, "message":$0.message, "user":["userName":$0.user.name, "color":$0.user.color, "userId":$0.user.userId]] }
+        let message = ["ChatMessagesResponse":["chatHistory":messagesArray]]
         sessionManager?.sendMessage(connectionId:connectionId, message:message)
     }
     
@@ -179,8 +185,8 @@ public class Chat {
                 }
             }
             
-            let messagesArray = chatMessages?.map { ["messageId":$0.messageId, "userName":$0.userName, "message":$0.message] }
-            let message = ["chatOldMessages": messagesArray ?? []]
+            let messagesArray = chatMessages?.map { ["id":$0.messageId, "message":$0.message, "user":["userName":$0.user.name, "color":$0.user.color, "userId":$0.user.userId]] }
+            let message = ["ChatMessagesResponse":["chatHistory":messagesArray ?? []]]
             sessionManager?.sendMessage(connectionId:connectionId, message:message)
         }
         catch {
