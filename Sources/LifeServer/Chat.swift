@@ -39,7 +39,7 @@ public class Chat {
     var recentMessages: [ChatMessage]
     var lastMessageId: Int
     var logIndex: [Int]
-    let kNumRecentMessages = 50
+    let kNumRecentMessages = 10
     
     var logFileHandle: FileHandle
     var logIndexFileHandle: FileHandle
@@ -100,7 +100,7 @@ public class Chat {
         if let chatMessage = msg["SendChatMessage"] as? [String:Any] {
             processChatMessage(withConnection:connectionId, user:userId, chatMessage:chatMessage)
         }
-        else if let _ = msg["GetRecentChatMessages"] as? Any {
+        else if let _ = msg["GetRecentChatMessages"] {
             processChatRecentMessagesRequest(withConnection:connectionId, user:userId)
         }
         else if let chatHistoryRequest = msg["GetChatMessages"] as? [String:Any] {
