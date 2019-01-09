@@ -76,8 +76,8 @@ final class JsonSer: ChannelOutboundHandler {
     public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let message = self.unwrapOutboundIn(data)
         
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: message, options: .prettyPrinted) else { return }
-        guard let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: message, options: []) else { return }
+        guard let jsonString = String(data: jsonData, encoding: .utf8)?.appending("\n") else { return }
         
         var buffer = ctx.channel.allocator.buffer(capacity: jsonString.count)
         buffer.write(string: jsonString)
