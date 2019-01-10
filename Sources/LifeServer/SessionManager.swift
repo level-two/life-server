@@ -185,7 +185,7 @@ class SessionManager {
         do {
             guard let uidVsCon = safeGetUidVsCon() else { return }
             
-            guard let userId = dic["userId"] as? Int else {
+            guard let userName = dic["userName"] as? String else {
                 throw SessionManagerError.InvalidUserLogoutRequest
             }
             
@@ -197,16 +197,16 @@ class SessionManager {
                 throw SessionManagerError.UserIsNotLoggedIn
             }
             
-            guard connectedUserId == userId else {
-                throw SessionManagerError.InvalidUserIdForLogout
-            }
-            
-            guard let user = usersManager?.getUser(withId: userId) else {
+            guard let user = usersManager?.getUser(withName: userName) else {
                 throw SessionManagerError.UserDoesntExist
             }
             
-            threadSafe.performAsyncBarrier { [unowned self] in
-                self.userIdForConnectionId[connectionId] = self.kNoUserId
+            guard connectedUserId == user.userId else {
+                throw SessionManagerError.InvalidUserIdForLogout
+            }
+            
+            threadSafe.performAsyncBarrier { [weak self] in
+                self?.userIdForConnectionId[connectionId] = self?.kNoUserId
             }
             
             // Notify client
@@ -214,7 +214,7 @@ class SessionManager {
             server?.send(to:connectionId, message:message)
             
             // Send event
-            self.userLogoutEvent.raise(with: userId)
+            self.userLogoutEvent.raise(with: user.userId)
         }
         catch {
             print("Failed to logout: \(error)")
