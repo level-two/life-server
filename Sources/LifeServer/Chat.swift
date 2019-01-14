@@ -100,8 +100,8 @@ public class Chat {
         if let chatMessage = msg["SendChatMessage"] as? [String:Any] {
             processChatMessage(withConnection:connectionId, user:userId, chatMessage:chatMessage)
         }
-        else if let _ = msg["GetRecentChatMessages"] {
-            processChatRecentMessagesRequest(withConnection:connectionId, user:userId)
+        else if let recentMessagesRequest = msg["GetRecentChatMessages"] as? [String:Any] {
+            processChatRecentMessagesRequest(withConnection:connectionId, user:userId, request: recentMessagesRequest)
         }
         else if let chatHistoryRequest = msg["GetChatMessages"] as? [String:Any] {
             processChatMessagesRequest(withConnection:connectionId, user:userId, request:chatHistoryRequest)
@@ -159,8 +159,21 @@ public class Chat {
         }
     }
     
-    func processChatRecentMessagesRequest(withConnection connectionId:Int, user userId:Int) {
-        let messagesArray = self.recentMessages.map { ["id":$0.messageId, "message":$0.message, "user":["userName":$0.user.name, "color":$0.user.color, "userId":$0.user.userId]] }
+    func processChatRecentMessagesRequest(withConnection connectionId:Int, user userId:Int, request: [String:Any]) {
+        var chatMessages: [ChatMessage]?
+        if let fromId = request["fromId"] as? Int {
+            seiralQueue.sync { [weak self] in
+                guard let self = self else { return }
+                chatMessages = try? self.getMessages(fromId: fromId, count: self.lastMessageId - fromId)
+            }
+        }
+        else {
+            chatMessages = self.recentMessages
+        }
+        
+        let messagesArray = chatMessages?.map {
+            ["id":$0.messageId, "message":$0.message, "user":["userName":$0.user.name, "color":$0.user.color, "userId":$0.user.userId]]
+        }
         let message = ["ChatMessagesResponse":["chatHistory":messagesArray]]
         sessionManager?.sendMessage(connectionId:connectionId, message:message)
     }
@@ -214,7 +227,7 @@ public class Chat {
             fromId >= 0,
             count >= 0,
             fromId < self.lastMessageId,
-            fromId + count < self.lastMessageId
+            fromId + count <= self.lastMessageId
         else {
             throw ChatError.InvalidChatMessagesRequest
         }
@@ -223,12 +236,12 @@ public class Chat {
         let fromPos = self.logIndex[fromId]
         var logData: Data
         
-        if (toId == self.lastMessageId-1) {
+        if (toId == self.lastMessageId) {
             self.logFileHandle.seek(toFileOffset: UInt64(fromPos))
             logData = self.logFileHandle.readDataToEndOfFile()
         }
         else {
-            let toPos = self.logIndex[toId+1]
+            let toPos = self.logIndex[toId]
             let dataLength = toPos - fromPos
             self.logFileHandle.seek(toFileOffset: UInt64(fromPos))
             logData = self.logFileHandle.readData(ofLength: Int(dataLength))
