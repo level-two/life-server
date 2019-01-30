@@ -97,6 +97,7 @@ class Server {
     public let connectionReceivedMessageEvent = Event2<Int, [String:Any]>()
     
     let port: Int
+    let host = "192.168.100.64"
     var group: MultiThreadedEventLoopGroup?
     var listenChannel: Channel?
     let channelsSyncQueue = DispatchQueue(label: "channelsQueue")
@@ -150,7 +151,7 @@ class Server {
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
         
-        self.listenChannel = try bootstrap.bind(host: "localhost", port: port).wait()
+        self.listenChannel = try bootstrap.bind(host: host, port: port).wait()
         
         guard let localAddress = listenChannel?.localAddress else {
             fatalError("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")

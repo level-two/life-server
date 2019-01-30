@@ -163,8 +163,8 @@ public class Chat {
         var chatMessages: [ChatMessage]?
         if let fromId = request["fromId"] as? Int {
             seiralQueue.sync { [weak self] in
-                guard let self = self else { return }
-                chatMessages = try? self.getMessages(fromId: fromId, count: self.lastMessageId - fromId)
+                guard let strongSelf = self else { return }
+                chatMessages = try? strongSelf.getMessages(fromId: fromId, count: strongSelf.lastMessageId - fromId)
             }
         }
         else {
