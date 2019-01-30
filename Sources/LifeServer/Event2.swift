@@ -36,7 +36,9 @@ public class Event2<U, V> {
     }
     
     public func removeTarget<T: AnyObject>(_ target: T) {
-        eventHandlers.removeAll { $0.compareTarget(target as AnyObject) }
+        if let index = eventHandlers.index(where: {$0.compareTarget(target as AnyObject)}) {
+            eventHandlers.remove(at: index)
+        }
     }
 }
 

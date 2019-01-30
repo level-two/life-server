@@ -107,6 +107,8 @@ class SessionManager {
         
     private func createUser(withDic dic:[String:Any], connectionId:Int) {
         do {
+print(dic)
+/*
             guard
                 let userDic = dic["user"] as? [String:Any],
                 let name = userDic["userName"] as? String,
@@ -116,6 +118,13 @@ class SessionManager {
             else {
                 throw SessionManagerError.InvalidUserCreateRequest
             }
+*/
+                let userDic = dic["user"] as! [String:Any]
+print(userDic)
+                let name = userDic["userName"] as! String
+print(name)
+                let color = userDic["color"] as! [Double]
+print(color)
             
             guard let user = try usersManager?.createUser(withName:name, withColor:color) else {
                 throw SessionManagerError.CreateUserReturnedNil
