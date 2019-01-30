@@ -171,6 +171,7 @@ extension Server {
         self.channelsSyncQueue.sync {
             channel = self.channels[channelId]
         }
+        sleep(4)
         channel?.write(message, promise:nil)
     }
     

@@ -110,9 +110,9 @@ class SessionManager {
             guard
                 let userDic = dic["user"] as? [String:Any],
                 let name = userDic["userName"] as? String,
-                let color = userDic["color"] as? [Double],
+                let color = userDic["color"] as? [Int],
                 color.count == 4,
-                color.filter({ $0 < 0.0 && $0 > 1.0 }).count == 0
+                color.filter({ $0 < 0 && $0 > 255 }).count == 0
             else {
                 throw SessionManagerError.InvalidUserCreateRequest
             }
