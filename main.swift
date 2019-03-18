@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2018 Yauheni Lychkouski.
+//    Copyright (C) 2019 Yauheni Lychkouski.
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 import Foundation
 
+/*
 #if os(Linux)
 var url = URL(fileURLWithPath: "/var/lib")
 #elseif os(macOS)
@@ -36,5 +37,10 @@ let chat = try Chat(sessionManager: sessionManager, usersManager: usersManager!,
 let gameplay = Gameplay()
 
 try server.runServer()
-dispatchMain()
+ 
+ */
 
+let lifeServer = LifeServer()
+lifeServer.assembleInteactions()
+lifeServer.run(host: "192.168.100.64", port: 1337)
+dispatchMain()

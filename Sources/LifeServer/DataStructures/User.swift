@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2018 Yauheni Lychkouski.
+//    Copyright (C) 2019 Yauheni Lychkouski.
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -16,28 +16,10 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
-import Dispatch
+import UIKit
 
-class ThreadSafeHelper {
-    private let lockQueue: DispatchQueue
-    
-    init(withQueueName queueName:String) {
-        lockQueue = DispatchQueue(label: queueName, attributes:.concurrent)
-    }
-    
-    public func performAsyncConcurrent(closure:@escaping ()->Void) {
-        lockQueue.async { closure() }
-    }
-    
-    public func performSyncConcurrent(closure:@escaping ()->Void) {
-        lockQueue.sync { closure() }
-    }
-    
-    public func performAsyncBarrier(closure:@escaping ()->Void) {
-        lockQueue.async(flags: .barrier)  { closure() }
-    }
-    
-    public func performSyncBarrier(closure:@escaping ()->Void) {
-        lockQueue.sync(flags: .barrier)  { closure() }
-    }
+struct User: Codable {
+    var userName: String
+    var userId: Int?
+    var color: Color
 }

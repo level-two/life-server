@@ -2,12 +2,21 @@
   "object": {
     "pins": [
       {
+        "package": "RxSwift",
+        "repositoryURL": "https://github.com/ReactiveX/RxSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "fc6030ea9fe9b8af0351fe195b4095a9f2339757",
+          "version": "4.4.2"
+        }
+      },
+      {
         "package": "swift-nio",
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "a20e129c22ad00a51c902dca54a5456f90664780",
-          "version": "1.12.0"
+          "revision": "29a9f2aca71c8afb07e291336f1789337ce235dd",
+          "version": "1.13.2"
         }
       },
       {

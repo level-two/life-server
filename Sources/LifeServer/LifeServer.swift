@@ -1,5 +1,3 @@
-// swift-tools-version:4.1
-
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2019 Yauheni Lychkouski.
 //
@@ -17,17 +15,19 @@
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
-import PackageDescription
+import Foundation
 
-let package = Package(
-    name: "LifeServer",
-    dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from:"1.0.0"),
-        .package(url: "https://github.com/ReactiveX/RxSwift.git", "4.0.0" ..< "5.0.0")
-    ],
-    targets: [
-        .target(
-            name: "LifeServer",
-            dependencies: ["NIO", "NIOFoundationCompat", "RxSwift"])
-    ]
-)
+class LifeServer {
+    public func run(host: String, port: Int) {
+        
+    }
+    
+    // MARK: - ----=== Private section ===----
+    private let server = Server()
+    private let sessionManager = SessionManager()
+    private let usersManager = UsersManager()
+    private let gameplay = Gameplay()
+    private let chat = Chat()
+    
+    private let disposeBag = DisposeBag()
+}

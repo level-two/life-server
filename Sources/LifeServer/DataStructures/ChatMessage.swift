@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2018 Yauheni Lychkouski.
+//    Copyright (C) 2019 Yauheni Lychkouski.
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -16,25 +16,9 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
-import NIO
 
-final class BridgeChannelHandler: ChannelInboundHandler {
-    public typealias InboundIn = Message
-    public typealias MessageHandler = (Message) -> Void
-    
-    private let messageHandler: MessageHandler
-    
-    init(messageHandler: @escaping MessageHandler) {
-        self.messageHandler = messageHandler
-    }
-    
-    public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-        let message = self.unwrapInboundIn(data)
-        messageHandler(message)
-    }
-    
-    public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
-        print("Bridge caught error: ", error)
-        ctx.close(promise: nil)
-    }
+struct ChatMessage: Codable {
+    let user: User
+    let message: String
+    let id: Int
 }

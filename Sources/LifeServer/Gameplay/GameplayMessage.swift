@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2018 Yauheni Lychkouski.
+//    Copyright (C) 2019 Yauheni Lychkouski.
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,31 +17,15 @@
 
 import Foundation
 
-enum Message: Codable {
-    case createUser(user: User)
-    case login(userName: String)
-    case logout(userName: String)
-    
-    case createUserResponse(user: User?, error: String?)
-    case loginResponse(user: User?, error: String?)
-    case logoutResponse(user: User?, error: String?)
-    
+enum GameplayMessage: Codable {
     case sendChatMessage(message: String)
     case getChatMessages(fromId: Int?, count: Int?)
     case chatMessage(message: ChatMessage)
     case chatMessages(messages: [ChatMessage]?, error: String?)
 }
 
-extension Message {
+extension GameplayMessage {
     private enum CodingKeys: String, CodingKey {
-        case createUser
-        case login
-        case logout
-        
-        case createUserResponse
-        case loginResponse
-        case logoutResponse
-        
         case sendChatMessage
         case getChatMessages
         case chatMessage
@@ -64,14 +48,6 @@ extension Message {
             return try container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: key).decode(T.self, forKey: auxKey)
         }
         switch key {
-        case .login:              self = try .login(userName: dec())
-        case .logout:             self = try .logout(userName: dec())
-        case .createUser:         self = try .createUser(user: dec())
-            
-        case .createUserResponse: self = try .createUserResponse(user: dec(.user), error: dec(.error))
-        case .loginResponse:      self = try .loginResponse(user: dec(.user), error: dec(.error))
-        case .logoutResponse:     self = try .logoutResponse(user: dec(.user), error: dec(.error))
-            
         case .sendChatMessage:    self = try .sendChatMessage(message: dec())
         case .chatMessage:        self = try .chatMessage(message: dec())
         case .chatMessages:       self = try .chatMessages(messages: dec(.messages), error: dec(.error))
@@ -83,24 +59,6 @@ extension Message {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
         switch self {
-        case .login(let userName):
-            try container.encode(userName, forKey:.login)
-        case .logout(let userName):
-            try container.encode(userName, forKey:.logout)
-        case .createUser(let user):
-            try container.encode(user, forKey:.createUser)
-        case .createUserResponse(let user, let error):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .createUserResponse)
-            try nestedContainter.encode(user, forKey:.user)
-            try nestedContainter.encode(error, forKey:.error)
-        case .loginResponse(let user, let error):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .loginResponse)
-            try nestedContainter.encode(user, forKey:.user)
-            try nestedContainter.encode(error, forKey:.error)
-        case .logoutResponse(let user, let error):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .logoutResponse)
-            try nestedContainter.encode(user, forKey:.user)
-            try nestedContainter.encode(error, forKey:.error)
         case .sendChatMessage(let message):
             try container.encode(message, forKey:.sendChatMessage)
         case .chatMessage(let message):
