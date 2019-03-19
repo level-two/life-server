@@ -50,28 +50,34 @@ extension LifeServer {
             }
         }.disposed(by: disposeBag)
         
-        sessionManagerInteractor.send.bind { connectionId, message in
+        sessionManagerInteractor.sendMessage.bind { connectionId, message in
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
-        usersManagerInteractor.send.bind { connectionId, message in
+        usersManagerInteractor.sendMessage.bind { connectionId, message in
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
-        gameplayInteractor.send.bind { userId, message in
+        gameplayInteractor.sendMessage.bind { userId, message in
             guard let connectionId = sessionManagerInteractor.connectionId(for: userId) else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
-        chatInteractor.send.bind { connectionId, message in
+        chatInteractor.sendMessage.bind { connectionId, message in
             guard let connectionId = sessionManagerInteractor.connectionId(for: userId) else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
+        usersManagerInteractor.userLoginStatusRequest
+            .bind(to:chatInteractor.userLoginStatusProvider.onNext)
+            .disposed(by: disposeBag)
         
+        chatInteractor.userDataRequest
+            .bind(to: usersManagerInteractor.userDataProvider.onNext)
+            .disposed(by: disposeBag)
     }
 }
