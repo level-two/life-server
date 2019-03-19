@@ -17,29 +17,28 @@
 
 import Foundation
 import NIO
+import RxSwift
 
-protocol ServerProtocol {
-    var onConnectionEstablished: Observable<Int> { get }
-    var onConnectionClosed     : Observable<Int> { get }
-    var onMessage              : Observable<(connectionId: Int, message: Message)> { get }
-    var onConnectedToServer    : Observable<Bool> { get }
+typealias ConnectionId = Int
+
+struct ServerInteractor {
+    let onConnectionEstablished = PublishSubject<(ConnectionId)>()
+    let onConnectionClosed      = PublishSubject<(ConnectionId)>()
+    let onMessage               = PublishSubject<(ConnectionId, Data)>()
     
-    @discardableResult func send(message: Message) -> Future<Void>
-    @discardableResult func sendBroadcast(message: Message) -> Future<Void>
+    let sendMessage             = PublishSubject<(ConnectionId, Data, Promise<Void>?)>()
+    let sendMessageBroadcast    = PublishSubject<(Data, Promise<Void>?)>()
 }
 
-class Server: ServerProtocol {
-    let onConnectionEstablished = Observable<Int>()
-    let onConnectionClosed      = Observable<Int>()
-    let onMessage               = Observable<(connectionId: Int, message: Message)>()
-    let onConnectedToServer     = Observable<Bool>()
+class Server {
+    let port = 0
+    let host = ""
     
-    let port: Int
-    let host = "192.168.100.64"
-    
+    let onConnectionEstablished = PublishSubject<ConnectionId>()
+    let onConnectionClosed      = PublishSubject<ConnectionId>()
     
     var listenChannel: Channel?
-    var channels = [Int:Channel]()
+    var connections = [ConnectionId:Channel]()
     
     let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
     var bootstrap: ServerBootstrap {
@@ -49,20 +48,28 @@ class Server: ServerProtocol {
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { [weak self] channel in
+                
+                
                 DispatchQueue.main.async {
-                    self?.channels[channel.channelId] = channel
+                    self?.connections[channel.channelId] = channel
+                    self?.onConnectionEstablished.onNext(channel.channelId)
                 }
                 
-                channel.closeFuture.map { _ in
-                    DispatchQueue.main.async {
-                        self?.channels.removeValue(forKey: channel.channelId)
+                channel.closeFuture.map { [weak self] _ in
+                    DispatchQueue.main.async { [weak self] in
+                        self?.connections.removeValue(forKey: channel.channelId)
+                        self?.onConnectionClosed.onNext(channel.channelId)
                     }
                 }
                 
+                let bridgeChannelHandler = BridgeChannelHandler()
+                bridgeChannelHandler.onReceived.bind {
+                    
+                }.disposed(by: bridgeChannelHandler.disposeBag)
+                
                 return channel.pipeline.addHandlers([
                     FrameChannelHandler(),
-                    MessageChannelHandler(),
-                    BridgeChannelHandler { [weak self] message in self?.onMessage.notifyObservers(message) }
+                    bridgeChannelHandler
                     ], first: true)
             }
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
@@ -72,54 +79,9 @@ class Server: ServerProtocol {
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
     }
     
-    
-    init(port: Int) {
+    func run(host: String, port: Int) throws {
+        self.host = host
         self.port = port
-    }
-    
-    func runServer() throws {
-        self.group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-        
-        let channelEventHandler: JsonDes.ChannelEventHandler = { [weak self] channelId, channelEventType, message in
-            switch channelEventType {
-            case .channelOpened:
-                self?.connectionEstablishedEvent.raise(with: channelId)
-            case .channelClosed:
-                self?.connectionClosedEvent.raise(with: channelId)
-            case .channelRead:
-                guard let message = message else { return }
-                self?.connectionReceivedMessageEvent.raise(with: channelId, message)
-            }
-        }
-        
-        let bootstrap = ServerBootstrap(group: group!)
-            // Specify backlog and enable SO_REUSEADDR for the server itself
-            .serverChannelOption(ChannelOptions.backlog, value: 256)
-            .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-            
-            // Set the handlers that are applied to the accepted Channels
-            .childChannelInitializer { [weak self] channel in
-                _ = channel.closeFuture.map { _ in
-                    self?.channelsSyncQueue.async {
-                        self?.channels.removeValue(forKey: channel.channelId)
-                    }
-                }
-                
-                self?.channelsSyncQueue.async {
-                    self?.channels[channel.channelId] = channel
-                }
-                
-                return channel.pipeline.add(handler:JsonSer()).then {
-                    channel.pipeline.add(handler:
-                        JsonDes(channelId:channel.channelId, channelEventHandler:channelEventHandler))
-                }
-            }
-            
-            // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
-            .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
-            .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-            .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
-            .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
         
         self.listenChannel = try bootstrap.bind(host: host, port: port).wait()
         
@@ -130,7 +92,7 @@ class Server: ServerProtocol {
     }
     
     deinit {
-        // Close all open sockets...
+        // Close all opened sockets...
         //try! self.listenChannel?.close().wait()
         try! self.group?.syncShutdownGracefully()
     }
@@ -140,18 +102,17 @@ extension Server {
     public func send(to channelId:Int, message: [String:Any]) {
         var channel: Channel?
         self.channelsSyncQueue.sync {
-            channel = self.channels[channelId]
+            channel = self.connections[channelId]
         }
-        sleep(4)
         channel?.write(message, promise:nil)
     }
     
     public func sendBroadcast(message: [String:Any]) {
-        var channels: Dictionary<Int, Channel>.Values?
+        var connections: Dictionary<Int, Channel>.Values?
         self.channelsSyncQueue.sync {
-            channels = self.channels.values
+            connections = self.connections.values
         }
-        channels?.forEach { $0.write(message, promise:nil) }
+        connections?.forEach { $0.write(message, promise:nil) }
     }
 }
 

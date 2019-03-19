@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9309BC092240589600336FC1 /* BridgeChannelHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9309BC062240589500336FC1 /* BridgeChannelHandler.swift */; };
+		9309BC0A2240589600336FC1 /* FrameChannelHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9309BC072240589500336FC1 /* FrameChannelHandler.swift */; };
 		934996DD223E58560007B626 /* LifeServerInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934996DB223E4B010007B626 /* LifeServerInteraction.swift */; };
 		934996E6223E69080007B626 /* SessionMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934996E4223E69040007B626 /* SessionMessage.swift */; };
 		934996E7223E6A160007B626 /* LifeServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934996DE223E65F70007B626 /* LifeServer.swift */; };
@@ -456,6 +458,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9309BC062240589500336FC1 /* BridgeChannelHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BridgeChannelHandler.swift; sourceTree = "<group>"; };
+		9309BC072240589500336FC1 /* FrameChannelHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FrameChannelHandler.swift; sourceTree = "<group>"; };
 		934996DB223E4B010007B626 /* LifeServerInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeServerInteraction.swift; sourceTree = "<group>"; };
 		934996DE223E65F70007B626 /* LifeServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeServer.swift; sourceTree = "<group>"; };
 		934996E4223E69040007B626 /* SessionMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionMessage.swift; sourceTree = "<group>"; };
@@ -876,6 +880,8 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_24 /* Server.swift */,
+				9309BC062240589500336FC1 /* BridgeChannelHandler.swift */,
+				9309BC072240589500336FC1 /* FrameChannelHandler.swift */,
 				OBJ_21 /* EventLoopFuture+Cascade.swift */,
 			);
 			path = Server;
@@ -1835,6 +1841,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
+				9309BC092240589600336FC1 /* BridgeChannelHandler.swift in Sources */,
+				9309BC0A2240589600336FC1 /* FrameChannelHandler.swift in Sources */,
 				OBJ_309 /* c-atomics.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
