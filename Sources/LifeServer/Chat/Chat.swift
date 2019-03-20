@@ -31,6 +31,15 @@ struct ChatMessage : Codable {
 }
 
 public class Chat {
+    init() {
+    }
+    
+    func onMessage(for userId: UserId, _ message: ChatMessage) {
+    }
+    
+    let sendMessage = PublishSubject<(UserId, ChatMessage, Promise<Void>?)>()
+    
+    /*
     weak var sessionManager: SessionManager?
     weak var usersManager: UsersManager?
     
@@ -255,4 +264,5 @@ public class Chat {
 
         return result
     }
+    */
 }

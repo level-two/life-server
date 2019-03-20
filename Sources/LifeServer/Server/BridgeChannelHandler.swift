@@ -21,8 +21,12 @@ import RxSwift
 
 final class BridgeChannelHandler: ChannelInboundHandler {
     public typealias InboundIn = Data
-    
+
     public let onMessage = PublishSubject<Data>()
+    
+    deinit {
+        print("[DEBUG!!] 🔥 BridgeChannelHandler deinit!")
+    }
     
     public func channelRead(ctx: ChannelHandlerContext, messageIn: NIOAny) {
         let data = self.unwrapInboundIn(messageIn)

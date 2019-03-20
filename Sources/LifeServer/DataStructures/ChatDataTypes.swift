@@ -17,12 +17,8 @@
 
 import Foundation
 
-public class Gameplay {
-    init() {
-    }
-    
-    func onMessage(for userId: UserId, _ message: GameplayMessage) {
-    }
-    
-    let sendMessage = PublishSubject<(UserId, GameplayMessage, Promise<Void>?)>()
+struct ChatMessageData: Codable {
+    let user: User
+    let message: String
+    let id: Int
 }

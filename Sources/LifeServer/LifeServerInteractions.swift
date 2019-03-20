@@ -66,14 +66,14 @@ extension LifeServer {
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
-        chatInteractor.sendMessage.bind { connectionId, message in
+        chatInteractor.sendMessage.bind { userId, message in
             guard let connectionId = sessionManagerInteractor.connectionId(for: userId) else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
-        usersManagerInteractor.userLoginStatusRequest
-            .bind(to:chatInteractor.userLoginStatusProvider.onNext)
+        chatInteractor.userLoginStatusRequest
+            .bind(to:usersManagerInteractor.userLoginStatusProvider.onNext)
             .disposed(by: disposeBag)
         
         chatInteractor.userDataRequest

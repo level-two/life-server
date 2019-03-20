@@ -17,12 +17,31 @@
 
 import Foundation
 
-public class Gameplay {
-    init() {
+typealias UserId = Int
+
+struct UserData: Codable {
+    var userName: String
+    var userId: UserId?
+    var color: Color
+}
+
+struct Color: Codable {
+    let r, g, b, a: CGFloat
+}
+
+extension Color {
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        r = try container.decode(CGFloat.self)/255
+        g = try container.decode(CGFloat.self)/255
+        b = try container.decode(CGFloat.self)/255
+        a = try container.decode(CGFloat.self)/255
     }
-    
-    func onMessage(for userId: UserId, _ message: GameplayMessage) {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+        try container.encode(Int(r*255))
+        try container.encode(Int(g*255))
+        try container.encode(Int(b*255))
+        try container.encode(Int(a*255))
     }
-    
-    let sendMessage = PublishSubject<(UserId, GameplayMessage, Promise<Void>?)>()
 }

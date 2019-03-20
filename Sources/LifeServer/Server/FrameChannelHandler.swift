@@ -34,8 +34,9 @@ final class FrameChannelHandler: ChannelInboundHandler {
         
         while let newlineRange = collected.rangeOfCharacter(from: .newlines) {
             let message = collected[..<newlineRange.lowerBound]
-            ctx.fireChannelRead(self.wrapInboundOut(message.data(using: .utf8)))
+            let data = message.data(using: .utf8)
             collected.removeSubrange(..<newlineRange.upperBound)
+            ctx.fireChannelRead(self.wrapInboundOut(data))
         }
     }
     

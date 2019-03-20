@@ -28,6 +28,15 @@ public enum UsersManagerError : Error {
 }
 
 public class UsersManager {
+    init() {
+    }
+    
+    func onMessage(for userId: ConnectionId, _ message: UsersManagerMessage) {
+    }
+    
+    let sendMessage = PublishSubject<(ConnectionId, UsersManagerMessage, Promise<Void>?)>()
+    
+    /*
     var lastUserId: Int
     var registeredUsers: [User]
     var fileHandle: FileHandle
@@ -90,4 +99,5 @@ public class UsersManager {
     public func getUser(withName userName:String) -> User? {
         return registeredUsers.first(where: { $0.name == userName })
     }
+    */
 }

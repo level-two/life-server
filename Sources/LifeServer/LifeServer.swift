@@ -16,6 +16,7 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import RxSwift
 
 class LifeServer {
     public func run(host: String, port: Int) {

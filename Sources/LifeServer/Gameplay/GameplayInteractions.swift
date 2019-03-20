@@ -17,8 +17,27 @@
 
 import Foundation
 
-struct ChatMessage: Codable {
-    let user: User
-    let message: String
-    let id: Int
+extension Gamplay {
+    public struct Interactor {
+        let onMessage = PublishSubject<(UserId, GameplayMessage)>()
+        let sendMessage = PublishSubject<(UserId, GameplayMessage, Promise<Void>?)>()
+    }
+    
+    public func assembleInteractions(disposeBag: DisposeBag) -> Gameplay.Interactor {
+        // internal interactions
+        
+        
+        // external interactions
+        let i = GameplayInteractor()
+        
+        self.sendMessage
+            .bind(onNext: i.sendMessage.onNext)
+            .disposed(by: disposeBag)
+        
+        i.onMessage
+            .bind(onNext: self.onMessage)
+            .disposed(by: disposeBag)
+        
+        return i
+    }
 }

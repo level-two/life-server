@@ -9,11 +9,15 @@
 /* Begin PBXBuildFile section */
 		9309BC092240589600336FC1 /* BridgeChannelHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9309BC062240589500336FC1 /* BridgeChannelHandler.swift */; };
 		9309BC0A2240589600336FC1 /* FrameChannelHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9309BC072240589500336FC1 /* FrameChannelHandler.swift */; };
-		934996DD223E58560007B626 /* LifeServerInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934996DB223E4B010007B626 /* LifeServerInteraction.swift */; };
+		934996DD223E58560007B626 /* LifeServerInteractions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934996DB223E4B010007B626 /* LifeServerInteractions.swift */; };
 		934996E6223E69080007B626 /* SessionMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934996E4223E69040007B626 /* SessionMessage.swift */; };
 		934996E7223E6A160007B626 /* LifeServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934996DE223E65F70007B626 /* LifeServer.swift */; };
 		934996E9223E6A4B0007B626 /* GameplayMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934996E8223E6A4B0007B626 /* GameplayMessage.swift */; };
 		934996EB223E6A580007B626 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934996EA223E6A580007B626 /* ChatMessage.swift */; };
+		9349F5522242651700358E02 /* GameplayInteractions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9349F5512242651700358E02 /* GameplayInteractions.swift */; };
+		9349F55422426B6400358E02 /* ChatInteractions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9349F55322426B6400358E02 /* ChatInteractions.swift */; };
+		9349F55622426C0E00358E02 /* UsersManagerInteractions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9349F55522426C0E00358E02 /* UsersManagerInteractions.swift */; };
+		9349F55822426C5B00358E02 /* UsersManagerMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9349F55722426C5B00358E02 /* UsersManagerMessage.swift */; };
 		OBJ_309 /* c-atomics.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_210 /* c-atomics.c */; };
 		OBJ_311 /* CNIOAtomics.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_212 /* CNIOAtomics.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_312 /* cpp_magic.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_213 /* cpp_magic.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -26,9 +30,8 @@
 		OBJ_339 /* c_nio_sha1.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_201 /* c_nio_sha1.c */; };
 		OBJ_341 /* CNIOSHA1.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_203 /* CNIOSHA1.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_348 /* Chat.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* Chat.swift */; };
-		OBJ_349 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* ChatMessage.swift */; };
-		OBJ_350 /* Color.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* Color.swift */; };
-		OBJ_351 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* User.swift */; };
+		OBJ_349 /* ChatDataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* ChatDataTypes.swift */; };
+		OBJ_351 /* UsersManagerDataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* UsersManagerDataTypes.swift */; };
 		OBJ_352 /* Gameplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_14 /* Gameplay.swift */; };
 		OBJ_353 /* Observable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* Observable.swift */; };
 		OBJ_354 /* Promises.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* Promises.swift */; };
@@ -460,11 +463,15 @@
 /* Begin PBXFileReference section */
 		9309BC062240589500336FC1 /* BridgeChannelHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BridgeChannelHandler.swift; sourceTree = "<group>"; };
 		9309BC072240589500336FC1 /* FrameChannelHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FrameChannelHandler.swift; sourceTree = "<group>"; };
-		934996DB223E4B010007B626 /* LifeServerInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeServerInteraction.swift; sourceTree = "<group>"; };
+		934996DB223E4B010007B626 /* LifeServerInteractions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeServerInteractions.swift; sourceTree = "<group>"; };
 		934996DE223E65F70007B626 /* LifeServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeServer.swift; sourceTree = "<group>"; };
 		934996E4223E69040007B626 /* SessionMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionMessage.swift; sourceTree = "<group>"; };
 		934996E8223E6A4B0007B626 /* GameplayMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameplayMessage.swift; sourceTree = "<group>"; };
 		934996EA223E6A580007B626 /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
+		9349F5512242651700358E02 /* GameplayInteractions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameplayInteractions.swift; sourceTree = "<group>"; };
+		9349F55322426B6400358E02 /* ChatInteractions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInteractions.swift; sourceTree = "<group>"; };
+		9349F55522426C0E00358E02 /* UsersManagerInteractions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsersManagerInteractions.swift; sourceTree = "<group>"; };
+		9349F55722426C5B00358E02 /* UsersManagerMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsersManagerMessage.swift; sourceTree = "<group>"; };
 		"LifeServer::LifeServer::Product" /* LifeServer */ = {isa = PBXFileReference; lastKnownFileType = text; path = LifeServer; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_100 /* HistoricalScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalScheduler.swift; sourceTree = "<group>"; };
 		OBJ_101 /* HistoricalSchedulerTimeConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalSchedulerTimeConverter.swift; sourceTree = "<group>"; };
@@ -476,7 +483,7 @@
 		OBJ_107 /* Lock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lock.swift; sourceTree = "<group>"; };
 		OBJ_108 /* LockOwnerType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockOwnerType.swift; sourceTree = "<group>"; };
 		OBJ_109 /* MainScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScheduler.swift; sourceTree = "<group>"; };
-		OBJ_11 /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
+		OBJ_11 /* ChatDataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ChatDataTypes.swift; path = ../DataStructures/ChatDataTypes.swift; sourceTree = "<group>"; };
 		OBJ_110 /* Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Map.swift; sourceTree = "<group>"; };
 		OBJ_111 /* Materialize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Materialize.swift; sourceTree = "<group>"; };
 		OBJ_112 /* Maybe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Maybe.swift; sourceTree = "<group>"; };
@@ -487,7 +494,6 @@
 		OBJ_117 /* Observable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Observable.swift; sourceTree = "<group>"; };
 		OBJ_118 /* ObservableConvertibleType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservableConvertibleType.swift; sourceTree = "<group>"; };
 		OBJ_119 /* ObservableType+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ObservableType+Extensions.swift"; sourceTree = "<group>"; };
-		OBJ_12 /* Color.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Color.swift; sourceTree = "<group>"; };
 		OBJ_120 /* ObservableType+PrimitiveSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ObservableType+PrimitiveSequence.swift"; sourceTree = "<group>"; };
 		OBJ_121 /* ObservableType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservableType.swift; sourceTree = "<group>"; };
 		OBJ_122 /* ObserveOn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObserveOn.swift; sourceTree = "<group>"; };
@@ -498,7 +504,7 @@
 		OBJ_127 /* Platform.Darwin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.Darwin.swift; sourceTree = "<group>"; };
 		OBJ_128 /* Platform.Linux.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.Linux.swift; sourceTree = "<group>"; };
 		OBJ_129 /* PrimitiveSequence+Zip+arity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PrimitiveSequence+Zip+arity.swift"; sourceTree = "<group>"; };
-		OBJ_13 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		OBJ_13 /* UsersManagerDataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsersManagerDataTypes.swift; sourceTree = "<group>"; };
 		OBJ_130 /* PrimitiveSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimitiveSequence.swift; sourceTree = "<group>"; };
 		OBJ_131 /* PriorityQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriorityQueue.swift; sourceTree = "<group>"; };
 		OBJ_132 /* Producer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Producer.swift; sourceTree = "<group>"; };
@@ -826,7 +832,9 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_9 /* Chat.swift */,
+				9349F55322426B6400358E02 /* ChatInteractions.swift */,
 				934996EA223E6A580007B626 /* ChatMessage.swift */,
+				OBJ_11 /* ChatDataTypes.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -835,6 +843,7 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_14 /* Gameplay.swift */,
+				9349F5512242651700358E02 /* GameplayInteractions.swift */,
 				934996E8223E6A4B0007B626 /* GameplayMessage.swift */,
 			);
 			path = Gameplay;
@@ -853,18 +862,11 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_27 /* UsersManager.swift */,
+				9349F55522426C0E00358E02 /* UsersManagerInteractions.swift */,
+				9349F55722426C5B00358E02 /* UsersManagerMessage.swift */,
+				OBJ_13 /* UsersManagerDataTypes.swift */,
 			);
 			path = UsersManager;
-			sourceTree = "<group>";
-		};
-		OBJ_10 /* DataStructures */ = {
-			isa = PBXGroup;
-			children = (
-				OBJ_11 /* ChatMessage.swift */,
-				OBJ_12 /* Color.swift */,
-				OBJ_13 /* User.swift */,
-			);
-			path = DataStructures;
 			sourceTree = "<group>";
 		};
 		OBJ_15 /* Libs */ = {
@@ -1485,8 +1487,7 @@
 			isa = PBXGroup;
 			children = (
 				934996DE223E65F70007B626 /* LifeServer.swift */,
-				934996DB223E4B010007B626 /* LifeServerInteraction.swift */,
-				OBJ_10 /* DataStructures */,
+				934996DB223E4B010007B626 /* LifeServerInteractions.swift */,
 				OBJ_18 /* Server */,
 				934996E2223E663D0007B626 /* SessionManager */,
 				934996E1223E66240007B626 /* Gameplay */,
@@ -1877,21 +1878,24 @@
 			buildActionMask = 0;
 			files = (
 				934996EB223E6A580007B626 /* ChatMessage.swift in Sources */,
+				9349F55622426C0E00358E02 /* UsersManagerInteractions.swift in Sources */,
 				OBJ_348 /* Chat.swift in Sources */,
-				OBJ_349 /* ChatMessage.swift in Sources */,
-				OBJ_350 /* Color.swift in Sources */,
+				OBJ_349 /* ChatDataTypes.swift in Sources */,
 				934996E7223E6A160007B626 /* LifeServer.swift in Sources */,
-				OBJ_351 /* User.swift in Sources */,
+				OBJ_351 /* UsersManagerDataTypes.swift in Sources */,
 				934996E9223E6A4B0007B626 /* GameplayMessage.swift in Sources */,
 				OBJ_352 /* Gameplay.swift in Sources */,
 				OBJ_353 /* Observable.swift in Sources */,
+				9349F55422426B6400358E02 /* ChatInteractions.swift in Sources */,
 				934996E6223E69080007B626 /* SessionMessage.swift in Sources */,
+				9349F55822426C5B00358E02 /* UsersManagerMessage.swift in Sources */,
 				OBJ_354 /* Promises.swift in Sources */,
 				OBJ_357 /* EventLoopFuture+Cascade.swift in Sources */,
 				OBJ_360 /* Server.swift in Sources */,
-				934996DD223E58560007B626 /* LifeServerInteraction.swift in Sources */,
+				934996DD223E58560007B626 /* LifeServerInteractions.swift in Sources */,
 				OBJ_362 /* SessionManager.swift in Sources */,
 				OBJ_363 /* UsersManager.swift in Sources */,
+				9349F5522242651700358E02 /* GameplayInteractions.swift in Sources */,
 				OBJ_364 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -16,10 +16,28 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
-import UIKit
 
-struct User: Codable {
-    var userName: String
-    var userId: Int?
-    var color: Color
+extension UsersManager {
+    public struct Interactor {
+        let onMessage = PublishSubject<(ConnectionId, UsersManagerMessage)>()
+        let sendMessage = PublishSubject<(ConnectionId, UsersManagerMessage, Promise<Void>?)>()
+    }
+    
+    public func assembleInteractions(disposeBag: DisposeBag) -> UsersManager.Interactor {
+        // internal interactions
+        
+        
+        // external interactions
+        let i = Interactor()
+        
+        self.sendMessage
+            .bind(onNext: i.sendMessage.onNext)
+            .disposed(by: disposeBag)
+        
+        i.onMessage
+            .bind(onNext: self.onMessage)
+            .disposed(by: disposeBag)
+        
+        return i
+    }
 }
