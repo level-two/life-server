@@ -20,8 +20,8 @@ import Foundation
 enum ChatMessage: Codable {
     case sendChatMessage(message: String)
     case getChatMessages(fromId: Int?, count: Int?)
-    case chatMessage(message: ChatMessage)
-    case chatMessages(messages: [ChatMessage]?, error: String?)
+    case chatMessage(message: ChatMessageData)
+    case chatMessages(messages: [ChatMessageData]?, error: String?)
 }
 
 extension ChatMessage {

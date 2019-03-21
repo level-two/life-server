@@ -1,4 +1,4 @@
-// swift-tools-version:4.1
+// swift-tools-version:4.2
 
 // -----------------------------------------------------------------------------
 //    Copyright (C) 2019 Yauheni Lychkouski.
@@ -28,6 +28,6 @@ let package = Package(
     targets: [
         .target(
             name: "LifeServer",
-            dependencies: ["NIO", "NIOFoundationCompat", "RxSwift"])
+            dependencies: ["NIO", "NIOFoundationCompat", "RxSwift", "RxCocoa"])
     ]
 )

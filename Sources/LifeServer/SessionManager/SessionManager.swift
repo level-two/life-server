@@ -16,6 +16,8 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import RxSwift
+import RxCocoa
 
 enum SessionManagerError : Error {
     case InvalidUserCreateRequest
@@ -33,6 +35,28 @@ enum SessionManagerError : Error {
 }
 
 class SessionManager {
+    init() {
+    }
+    
+    func onMessage(for userId: Server.ConnectionId, _ message: SessionManagerMessage) {
+    }
+    
+    func getUserId(for connectionId: Server.ConnectionId) -> UserId? {
+        return nil
+    }
+    
+    func getConnectionId(for userId: UserId) -> Server.ConnectionId? {
+        return nil
+    }
+    
+    func getLoginStatus(for userId: UserId) -> Bool {
+        return false
+    }
+    
+    
+    let sendMessage = PublishSubject<(Server.ConnectionId, SessionManagerMessage)>()
+    
+    /*
     public let messageEvent = Event3<Int, Int, [String:Any]>()
     public let userLoginEvent = Event<Int>()
     public let userLogoutEvent = Event<Int>()
@@ -224,4 +248,5 @@ class SessionManager {
             server?.send(to:connectionId, message:message)
         }
     }
+    */
 }

@@ -16,11 +16,13 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import RxSwift
+import RxCocoa
 
-extension Gamplay {
-    public struct Interactor {
+extension Gameplay {
+    public class Interactor {
         let onMessage = PublishSubject<(UserId, GameplayMessage)>()
-        let sendMessage = PublishSubject<(UserId, GameplayMessage, Promise<Void>?)>()
+        let sendMessage = PublishSubject<(UserId, GameplayMessage)>()
     }
     
     public func assembleInteractions(disposeBag: DisposeBag) -> Gameplay.Interactor {
@@ -28,7 +30,7 @@ extension Gamplay {
         
         
         // external interactions
-        let i = GameplayInteractor()
+        let i = Gameplay.Interactor()
         
         self.sendMessage
             .bind(onNext: i.sendMessage.onNext)

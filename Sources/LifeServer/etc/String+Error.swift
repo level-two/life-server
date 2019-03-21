@@ -16,23 +16,5 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
-import RxSwift
-import RxCocoa
 
-class LifeServer {
-    init() {
-        assembleInteractions(disposeBag: self.disposeBag)
-    }
-    
-    public func run(host: String, port: Int) {
-        
-    }
-    
-    let server = Server()
-    let sessionManager = SessionManager()
-    let usersManager = UsersManager()
-    let gameplay = Gameplay()
-    let chat = Chat()
-    
-    let disposeBag = DisposeBag()
-}
+extension String: Error { }

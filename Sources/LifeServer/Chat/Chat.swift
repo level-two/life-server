@@ -16,6 +16,8 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import RxSwift
+import RxCocoa
 
 public enum ChatError : Error {
     case MessageFromAnonymousUser
@@ -24,11 +26,6 @@ public enum ChatError : Error {
     case InvalidChatMessage
 }
 
-struct ChatMessage : Codable {
-    var messageId: Int
-    var message: String
-    var user: User
-}
 
 public class Chat {
     init() {
@@ -37,7 +34,7 @@ public class Chat {
     func onMessage(for userId: UserId, _ message: ChatMessage) {
     }
     
-    let sendMessage = PublishSubject<(UserId, ChatMessage, Promise<Void>?)>()
+    let sendMessage = PublishSubject<(UserId, ChatMessage)>()
     
     /*
     weak var sessionManager: SessionManager?

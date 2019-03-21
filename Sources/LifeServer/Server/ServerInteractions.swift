@@ -16,34 +16,38 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import NIO
 import RxSwift
 import RxCocoa
 
-extension UsersManager {
-    public class Interactor {
-        let onMessage = PublishSubject<(Server.ConnectionId, UsersManagerMessage)>()
-        let sendMessage = PublishSubject<(Server.ConnectionId, UsersManagerMessage)>()
+extension Server {
+    public class ServerInteractor {
+        let onConnectionEstablished = PublishSubject<ConnectionId>()
+        let onConnectionClosed      = PublishSubject<ConnectionId>()
+        let onMessage               = PublishSubject<(ConnectionId, Data)>()
         
-        fileprivate(set) var getUserData: (UserId) -> UserData? = { _ in nil }
+        let sendMessage             = PublishSubject<(ConnectionId, Data)>()
     }
     
-    public func assembleInteractions(disposeBag: DisposeBag) -> UsersManager.Interactor {
-        // internal interactions
+    public func assembleInteractions(disposeBag: DisposeBag) -> ServerInteractor {
+        let i = ServerInteractor()
         
-        
-        // external interactions
-        let i = Interactor()
-        
-        self.sendMessage
-            .bind(onNext: i.sendMessage.onNext)
+        i.sendMessage
+            .observeOn(MainScheduler.instance)
+            .bind { [weak self] connectionId, data in self?.send(data, for: connectionId) }
             .disposed(by: disposeBag)
         
-        i.onMessage
-            .bind(onNext: self.onMessage)
+        onConnectionEstablished
+            .bind(onNext: i.onConnectionEstablished.onNext)
             .disposed(by: disposeBag)
         
+        onConnectionClosed
+            .bind(onNext: i.onConnectionClosed.onNext)
+            .disposed(by: disposeBag)
         
-        i.getUserData = { [weak self] userId in return self?.getUserData(for: userId) }
+        onMessage
+            .bind(onNext: i.onMessage.onNext)
+            .disposed(by: disposeBag)
         
         return i
     }

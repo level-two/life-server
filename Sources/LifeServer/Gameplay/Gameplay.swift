@@ -16,6 +16,8 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import RxSwift
+import RxCocoa
 
 public class Gameplay {
     init() {
@@ -24,5 +26,5 @@ public class Gameplay {
     func onMessage(for userId: UserId, _ message: GameplayMessage) {
     }
     
-    let sendMessage = PublishSubject<(UserId, GameplayMessage, Promise<Void>?)>()
+    let sendMessage = PublishSubject<(UserId, GameplayMessage)>()
 }

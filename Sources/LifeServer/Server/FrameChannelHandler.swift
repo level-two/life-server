@@ -34,9 +34,14 @@ final class FrameChannelHandler: ChannelInboundHandler {
         
         while let newlineRange = collected.rangeOfCharacter(from: .newlines) {
             let message = collected[..<newlineRange.lowerBound]
-            let data = message.data(using: .utf8)
+         
+            if let data = message.data(using: .utf8) {
+                ctx.fireChannelRead(self.wrapInboundOut(data))
+            } else {
+                ctx.fireErrorCaught("Failed to get data for message frame")
+            }
+            
             collected.removeSubrange(..<newlineRange.upperBound)
-            ctx.fireChannelRead(self.wrapInboundOut(data))
         }
     }
     

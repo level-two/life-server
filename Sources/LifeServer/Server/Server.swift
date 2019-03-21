@@ -18,42 +18,11 @@
 import Foundation
 import NIO
 import RxSwift
+import RxCocoa
 
 class Server {
     public typealias ConnectionId = Int
 
-    public struct ServerInteractor {
-        let onConnectionEstablished = PublishSubject<ConnectionId>()
-        let onConnectionClosed      = PublishSubject<ConnectionId>()
-        let onMessage               = PublishSubject<(ConnectionId, Data)>()
-        
-        let sendMessage             = PublishSubject<(ConnectionId, Data, Promise<Void>?)>()
-    }
-    
-    public func assembleInteractions(disposeBag: DisposeBag) -> ServerInteractor {
-        let i = ServerInteractor()
-        
-        i.sendMessage
-            .observeOn(MainScheduler.instance)
-            .bind { [weak self] channelId, message, promise in
-                self?.connections[channelId]?.writeAndFlush(message, promise:promise)
-            }.disposed(by: disposeBag)
-        
-        onConnectionEstablished
-            .bind(onNext: i.onConnectionEstablished.onNext)
-            .disposed(by: disposeBag)
-        
-        onConnectionClosed
-            .bind(onNext: i.onConnectionClosed.onNext)
-            .disposed(by: disposeBag)
-        
-        onMessage
-            .bind(onNext: i.onMessage.onNext)
-            .disposed(by: disposeBag)
-        
-        return i
-    }
-    
     public func run(host: String, port: Int) throws {
         self.host = host
         self.port = port
@@ -67,7 +36,7 @@ class Server {
     deinit {
         // Close all opened sockets...
         //try! self.listenChannel?.close().wait()
-        try! self.group?.syncShutdownGracefully()
+        try! self.group.syncShutdownGracefully()
     }
     
     var port = 0
@@ -98,23 +67,27 @@ class Server {
 extension Server {
     func channelInitializer(_ channel: Channel) -> EventLoopFuture<Void> {
         DispatchQueue.main.async { [weak self] in
-            self?.connections[channel.channelId] = channel
-            self?.onConnectionEstablished.onNext(channel.channelId)
+            self?.connections[channel.connectionId] = channel
+            self?.onConnectionEstablished.onNext(channel.connectionId)
         }
         
-        channel.closeFuture.map { [weak self] _ in
+        _ = channel.closeFuture.map { [weak self] _ in
             DispatchQueue.main.async { [weak self] in
-                self?.connections.removeValue(forKey: channel.channelId)
-                self?.onConnectionClosed.onNext(channel.channelId)
+                self?.connections.removeValue(forKey: channel.connectionId)
+                self?.onConnectionClosed.onNext(channel.connectionId)
             }
         }
         // TODO: Check whether channel and bridge are destroyed - do we need [unowned channel] ?
         let bridge = BridgeChannelHandler()
-        bridge.onReceived
+        bridge.onMessage
             .bind { [weak self, unowned channel] message in self?.onMessage.onNext((channel.connectionId, message)) }
             .disposed(by: bridge.disposeBag)
         
         return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
+    }
+    
+    func send(_ data: Data, for connectionId: ConnectionId) {
+        _ = connections[connectionId]?.writeAndFlush(NIOAny(data))
     }
 }
 

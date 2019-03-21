@@ -17,30 +17,8 @@
 
 import Foundation
 
-/*
-#if os(Linux)
-var url = URL(fileURLWithPath: "/var/lib")
-#elseif os(macOS)
-var url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-#endif
-url.appendPathComponent("LifeServer/")
-
-if FileManager.default.fileExists(atPath: url.path) == false {
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
+struct ChatMessageData: Codable {
+    let user: UserData
+    let message: String
+    let id: Int
 }
-
-let port = 1337
-let server = Server(port: port)
-let usersManager = try UsersManager(documentsUrl: url)
-let sessionManager = SessionManager(withServer: server, usersManager: usersManager!)
-let chat = try Chat(sessionManager: sessionManager, usersManager: usersManager!, documentsUrl: url)
-let gameplay = Gameplay()
-
-try server.runServer()
- 
- */
-
-let lifeServer = LifeServer()
-lifeServer.assembleInteactions()
-lifeServer.run(host: "192.168.100.64", port: 1337)
-dispatchMain()

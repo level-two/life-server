@@ -16,14 +16,16 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import RxSwift
+import RxCocoa
 
 extension Chat {
-    public struct Interactor {
-        let onMessage = PublishSubject<(UserId, GameplayMessage)>()
-        let sendMessage = PublishSubject<(UserId, GameplayMessage, Promise<Void>?)>()
+    public class Interactor {
+        let onMessage = PublishSubject<(UserId, ChatMessage)>()
+        let sendMessage = PublishSubject<(UserId, ChatMessage)>()
         
-        let userLoginStatusRequest = PublishSubject<(UserId, Promise<Bool>)>()
-        let userDataRequest = PublishSubject<(UserId, Promise<UserData>)>()
+        var getLoginStatus: (UserId) -> Bool = { _ in false }
+        var getUserData: (UserId) -> UserData? = { _ in nil }
     }
     
     public func assembleInteractions(disposeBag: DisposeBag) -> Chat.Interactor {
@@ -41,13 +43,7 @@ extension Chat {
             .bind(onNext: self.onMessage)
             .disposed(by: disposeBag)
         
-        self.userLoginStatusRequest
-            .bind(onNext: i.userLoginStatusRequest.onNext)
-            .disposed(by: disposeBag)
-        
-        self.userDataRequest
-            .bind(onNext: i.userDataRequest.onNext)
-            .disposed(by: disposeBag)
+        // use getUserData and getLoginStatus here
         
         return i
     }

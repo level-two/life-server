@@ -19,31 +19,37 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-extension UsersManager {
+extension SessionManager {
     public class Interactor {
-        let onMessage = PublishSubject<(Server.ConnectionId, UsersManagerMessage)>()
-        let sendMessage = PublishSubject<(Server.ConnectionId, UsersManagerMessage)>()
+        let onMessage = PublishSubject<(Server.ConnectionId, SessionManagerMessage)>()
+        let sendMessage = PublishSubject<(Server.ConnectionId, SessionManagerMessage)>()
         
-        fileprivate(set) var getUserData: (UserId) -> UserData? = { _ in nil }
+        fileprivate(set) var getUserId: (Server.ConnectionId) -> UserId? = { _ in nil }
+        fileprivate(set) var getConnectionId: (UserId) -> Server.ConnectionId? = { _ in nil }
+        fileprivate(set) var getLoginStatus: (UserId) -> Bool = { _ in false }
     }
     
-    public func assembleInteractions(disposeBag: DisposeBag) -> UsersManager.Interactor {
+    public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
         // internal interactions
         
         
         // external interactions
         let i = Interactor()
         
-        self.sendMessage
-            .bind(onNext: i.sendMessage.onNext)
-            .disposed(by: disposeBag)
-        
         i.onMessage
             .bind(onNext: self.onMessage)
             .disposed(by: disposeBag)
         
+        self.sendMessage
+            .bind(onNext: i.sendMessage.onNext)
+            .disposed(by: disposeBag)
         
-        i.getUserData = { [weak self] userId in return self?.getUserData(for: userId) }
+        i.getUserId = { [weak self] connectionId in return self?.getUserId(for: connectionId) }
+        i.getConnectionId = { [weak self] userId in return self?.getConnectionId(for: userId) }
+        i.getLoginStatus = { [weak self] userId in
+            guard let self = self else { return false }
+            return self.getLoginStatus(for: userId)
+        }
         
         return i
     }

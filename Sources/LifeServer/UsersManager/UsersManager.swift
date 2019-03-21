@@ -16,12 +16,8 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
-
-public struct User : Codable {
-    var name: String
-    var color: [Int]
-    var userId: Int
-}
+import RxSwift
+import RxCocoa
 
 public enum UsersManagerError : Error {
     case UserAlreadyExists
@@ -31,10 +27,14 @@ public class UsersManager {
     init() {
     }
     
-    func onMessage(for userId: ConnectionId, _ message: UsersManagerMessage) {
+    func onMessage(for connectionId: Server.ConnectionId, _ message: UsersManagerMessage) {
     }
     
-    let sendMessage = PublishSubject<(ConnectionId, UsersManagerMessage, Promise<Void>?)>()
+    let sendMessage = PublishSubject<(Server.ConnectionId, UsersManagerMessage)>()
+    
+    func getUserData(for userId: UserId) -> UserData? {
+        return nil
+    }
     
     /*
     var lastUserId: Int

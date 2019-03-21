@@ -17,9 +17,10 @@
 
 import Foundation
 import RxSwift
+import RxCocoa
 
 extension LifeServer {
-    public func assembleInteractions() {
+    public func assembleInteractions(disposeBag: DisposeBag) {
         let serverInteractor = server.assembleInteractions(disposeBag: disposeBag)
         let sessionManagerInteractor = sessionManager.assembleInteractions(disposeBag: disposeBag)
         let usersManagerInteractor = usersManager.assembleInteractions(disposeBag: disposeBag)
@@ -37,15 +38,15 @@ extension LifeServer {
                 return
             }
             
-            guard let userId = sessionManagerInteractor.userId(for: connectionId) else { return } // TODO: userId(for:) can be defined as closure
+            guard let userId = sessionManagerInteractor.getUserId(connectionId) else { return }
             
             if let gameplayMessage = try? JSONDecoder().decode(GameplayMessage.self, from: data) {
-                gameplayChannelHandler.onMessage.onNext((userId, gameplayMessage))
+                gameplayInteractor.onMessage.onNext((userId, gameplayMessage))
                 return
             }
             
             if let chatMessage = try? JSONDecoder().decode(ChatMessage.self, from: data) {
-                chatChannelHandler.onMessage.onNext((userId, chatMessage))
+                chatInteractor.onMessage.onNext((userId, chatMessage))
                 return
             }
         }.disposed(by: disposeBag)
@@ -61,23 +62,23 @@ extension LifeServer {
         }.disposed(by: disposeBag)
         
         gameplayInteractor.sendMessage.bind { userId, message in
-            guard let connectionId = sessionManagerInteractor.connectionId(for: userId) else { return }
+            guard let connectionId = sessionManagerInteractor.getConnectionId(userId) else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
         chatInteractor.sendMessage.bind { userId, message in
-            guard let connectionId = sessionManagerInteractor.connectionId(for: userId) else { return }
+            guard let connectionId = sessionManagerInteractor.getConnectionId(userId) else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
-        chatInteractor.userLoginStatusRequest
-            .bind(to:usersManagerInteractor.userLoginStatusProvider.onNext)
-            .disposed(by: disposeBag)
+        chatInteractor.getLoginStatus = { [weak sessionManagerInteractor] userId in
+            return sessionManagerInteractor?.getLoginStatus(userId) ?? false
+        }
         
-        chatInteractor.userDataRequest
-            .bind(to: usersManagerInteractor.userDataProvider.onNext)
-            .disposed(by: disposeBag)
+        chatInteractor.getUserData = { [weak usersManagerInteractor] userId in
+            return usersManagerInteractor?.getUserData(userId)
+        }
     }
 }

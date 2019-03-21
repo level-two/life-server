@@ -17,13 +17,13 @@
 
 import Foundation
 
-enum SessionMessage: Codable {
-    case createUser(user: User)
+enum SessionManagerMessage: Codable {
+    case createUser(user: UserData)
     case login(userName: String)
     case logout(userName: String)
 }
 
-extension SessionMessage {
+extension SessionManagerMessage {
     private enum CodingKeys: String, CodingKey {
         case createUser
         case login
