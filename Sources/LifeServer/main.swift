@@ -41,5 +41,6 @@ try server.runServer()
  */
 
 let lifeServer = LifeServer()
-lifeServer.run(host: "192.168.100.64", port: 1337)
+let lifeServerInteractor = lifeServer.assembleInteractions()
+lifeServerInteractor.runServer("192.168.100.64", 1337)
 dispatchMain()

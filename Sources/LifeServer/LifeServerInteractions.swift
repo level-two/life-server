@@ -20,7 +20,11 @@ import RxSwift
 import RxCocoa
 
 extension LifeServer {
-    public func assembleInteractions(disposeBag: DisposeBag) {
+    public class Interactor {
+        fileprivate(set) var runServer: (_ host: String, _ port: Int) -> () = { _, _ in }
+    }
+    
+    public func assembleInteractions() -> LifeServer.Interactor {
         let serverInteractor = server.assembleInteractions(disposeBag: disposeBag)
         let sessionManagerInteractor = sessionManager.assembleInteractions(disposeBag: disposeBag)
         let usersManagerInteractor = usersManager.assembleInteractions(disposeBag: disposeBag)
@@ -80,5 +84,10 @@ extension LifeServer {
         chatInteractor.getUserData = { [weak usersManagerInteractor] userId in
             return usersManagerInteractor?.getUserData(userId)
         }
+        
+        let i = LifeServer.Interactor()
+        i.runServer = { [weak serverInteractor] host, port in serverInteractor?.runServer(host, port) }
+        
+        return i
     }
 }

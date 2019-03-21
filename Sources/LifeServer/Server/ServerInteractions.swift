@@ -27,6 +27,8 @@ extension Server {
         let onMessage               = PublishSubject<(ConnectionId, Data)>()
         
         let sendMessage             = PublishSubject<(ConnectionId, Data)>()
+        
+        fileprivate(set) var runServer: (_ host: String, _ port: Int) -> () = { _, _ in }
     }
     
     public func assembleInteractions(disposeBag: DisposeBag) -> ServerInteractor {
@@ -37,37 +39,34 @@ extension Server {
             .bind { [weak self] connectionId, data in self?.send(data, for: connectionId) }
             .disposed(by: disposeBag)
         
-        onConnectionEstablished
-            .bind(to: i.onConnectionEstablished)
-            .disposed(by: disposeBag)
-        
-        onConnectionClosed
-            .bind(to: i.onConnectionClosed)
-            .disposed(by: disposeBag)
-        
-        i.onMessage.bind { message in
-            print(message)
-        }.disposed(by: disposeBag)
-        
-        self.channelInitializer = { [weak self] channel in
+        i.runServer = { [weak self, weak i] host, port in
             guard let self = self else { return }
             
-            self.storeConnection(channel, with: channel.connectionId)
-            self.onConnectionEstablished.onNext(channel.connectionId)
-            
-            _ = channel.closeFuture.map { [weak self] _ in
-                DispatchQueue.main.async { [weak self] in
-                    self?.connections.removeValue(forKey: channel.connectionId)
-                    self?.onConnectionClosed.onNext(channel.connectionId)
+            let bootstrap = self.makeBootstrap() { [weak self, weak i] channel in
+                let connectionId = channel.connectionId
+                
+                self?.storeConnection(channel, with: connectionId)
+                i?.onConnectionEstablished.onNext(connectionId)
+                
+                _ = channel.closeFuture.map { [weak self, weak i] _ in
+                    self?.removeConnection(with: connectionId)
+                    i?.onConnectionClosed.onNext(connectionId)
                 }
+                
+                let bridge = BridgeChannelHandler()
+                bridge.onMessage
+                    .bind { [weak i] message in i?.onMessage.onNext((connectionId, message)) }
+                    .disposed(by: bridge.disposeBag)
+                
+                return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
             }
-            // TODO: Check whether channel and bridge are destroyed - do we need [unowned channel] ?
-            let bridge = BridgeChannelHandler()
-            bridge.onMessage
-                .bind { [weak self, unowned channel] message in self?.onMessage.onNext((channel.connectionId, message)) }
-                .disposed(by: bridge.disposeBag)
             
-            return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
+            self.listenChannel = try? bootstrap.bind(host: host, port: port).wait()
+            guard let localAddress = self.listenChannel?.localAddress else {
+                fatalError("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")
+            }
+            
+            print("Server started and listening on \(localAddress)")
         }
         
         return i

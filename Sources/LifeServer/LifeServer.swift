@@ -20,14 +20,6 @@ import RxSwift
 import RxCocoa
 
 class LifeServer {
-    init() {
-        assembleInteractions(disposeBag: self.disposeBag)
-    }
-    
-    public func run(host: String, port: Int) {
-        
-    }
-    
     let server = Server()
     let sessionManager = SessionManager()
     let usersManager = UsersManager()

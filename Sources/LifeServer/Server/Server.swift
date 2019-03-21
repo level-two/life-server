@@ -22,16 +22,6 @@ import RxCocoa
 
 class Server {
     public typealias ConnectionId = Int
-
-    public func run(host: String, port: Int) throws {
-        self.host = host
-        self.port = port
-        self.listenChannel = try bootstrap.bind(host: host, port: port).wait()
-        guard let localAddress = listenChannel?.localAddress else {
-            fatalError("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")
-        }
-        print("Server started and listening on \(localAddress)")
-    }
     
     deinit {
         // Close all opened sockets...
@@ -39,18 +29,11 @@ class Server {
         try! self.group.syncShutdownGracefully()
     }
     
-    var port = 0
-    var host = ""
     var listenChannel: Channel?
     var connections = [ConnectionId:Channel]()
     let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
     
-    let onConnectionEstablished = PublishSubject<ConnectionId>()
-    let onConnectionClosed      = PublishSubject<ConnectionId>()
-    let onMessage               = PublishSubject<(ConnectionId, Data)>()
-    
-    
-    var bootstrap: ServerBootstrap {
+    func makeBootstrap(with channelInitializer: @escaping (Channel)->EventLoopFuture<Void>) -> ServerBootstrap {
         return ServerBootstrap(group: self.group)
             // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: 256)
@@ -63,11 +46,25 @@ class Server {
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
     }
+    
+    func storeConnection(_ connection: Channel, with connectionId: ConnectionId) {
+        DispatchQueue.main.async { [weak self] in
+            self?.connections[connectionId] = connection
+        }
+    }
+    
+    func removeConnection(with connectionId: ConnectionId) {
+        DispatchQueue.main.async { [weak self] in
+            self?.connections.removeValue(forKey: connectionId)
+        }
+    }
 }
 
 extension Server {
     func send(_ data: Data, for connectionId: ConnectionId) {
-        _ = connections[connectionId]?.writeAndFlush(NIOAny(data))
+        DispatchQueue.main.async { [weak self] in
+            self?.connections[connectionId]?.writeAndFlush(NIOAny(data), promise: nil)
+        }
     }
 }
 
