@@ -22,9 +22,4 @@ import RxCocoa
 public class Gameplay {
     init() {
     }
-    
-    func onMessage(for userId: UserId, _ message: GameplayMessage) {
-    }
-    
-    let sendMessage = PublishSubject<(UserId, GameplayMessage)>()
 }

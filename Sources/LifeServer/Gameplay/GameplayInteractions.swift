@@ -32,13 +32,9 @@ extension Gameplay {
         // external interactions
         let i = Gameplay.Interactor()
         
-        self.sendMessage
-            .bind(onNext: i.sendMessage.onNext)
-            .disposed(by: disposeBag)
-        
-        i.onMessage
-            .bind(onNext: self.onMessage)
-            .disposed(by: disposeBag)
+        i.onMessage.bind { message in
+            print(message)
+        }.disposed(by: disposeBag)
         
         return i
     }

@@ -31,11 +31,6 @@ public class Chat {
     init() {
     }
     
-    func onMessage(for userId: UserId, _ message: ChatMessage) {
-    }
-    
-    let sendMessage = PublishSubject<(UserId, ChatMessage)>()
-    
     /*
     weak var sessionManager: SessionManager?
     weak var usersManager: UsersManager?

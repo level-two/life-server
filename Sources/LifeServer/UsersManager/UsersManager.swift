@@ -27,11 +27,6 @@ public class UsersManager {
     init() {
     }
     
-    func onMessage(for connectionId: Server.ConnectionId, _ message: UsersManagerMessage) {
-    }
-    
-    let sendMessage = PublishSubject<(Server.ConnectionId, UsersManagerMessage)>()
-    
     func getUserData(for userId: UserId) -> UserData? {
         return nil
     }

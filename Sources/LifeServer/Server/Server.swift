@@ -49,6 +49,7 @@ class Server {
     let onConnectionClosed      = PublishSubject<ConnectionId>()
     let onMessage               = PublishSubject<(ConnectionId, Data)>()
     
+    
     var bootstrap: ServerBootstrap {
         return ServerBootstrap(group: self.group)
             // Specify backlog and enable SO_REUSEADDR for the server itself
@@ -65,27 +66,6 @@ class Server {
 }
 
 extension Server {
-    func channelInitializer(_ channel: Channel) -> EventLoopFuture<Void> {
-        DispatchQueue.main.async { [weak self] in
-            self?.connections[channel.connectionId] = channel
-            self?.onConnectionEstablished.onNext(channel.connectionId)
-        }
-        
-        _ = channel.closeFuture.map { [weak self] _ in
-            DispatchQueue.main.async { [weak self] in
-                self?.connections.removeValue(forKey: channel.connectionId)
-                self?.onConnectionClosed.onNext(channel.connectionId)
-            }
-        }
-        // TODO: Check whether channel and bridge are destroyed - do we need [unowned channel] ?
-        let bridge = BridgeChannelHandler()
-        bridge.onMessage
-            .bind { [weak self, unowned channel] message in self?.onMessage.onNext((channel.connectionId, message)) }
-            .disposed(by: bridge.disposeBag)
-        
-        return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
-    }
-    
     func send(_ data: Data, for connectionId: ConnectionId) {
         _ = connections[connectionId]?.writeAndFlush(NIOAny(data))
     }

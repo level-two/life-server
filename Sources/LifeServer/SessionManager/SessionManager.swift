@@ -38,9 +38,6 @@ class SessionManager {
     init() {
     }
     
-    func onMessage(for userId: Server.ConnectionId, _ message: SessionManagerMessage) {
-    }
-    
     func getUserId(for connectionId: Server.ConnectionId) -> UserId? {
         return nil
     }
@@ -52,9 +49,6 @@ class SessionManager {
     func getLoginStatus(for userId: UserId) -> Bool {
         return false
     }
-    
-    
-    let sendMessage = PublishSubject<(Server.ConnectionId, SessionManagerMessage)>()
     
     /*
     public let messageEvent = Event3<Int, Int, [String:Any]>()

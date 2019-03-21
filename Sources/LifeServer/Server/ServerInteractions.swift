@@ -38,16 +38,37 @@ extension Server {
             .disposed(by: disposeBag)
         
         onConnectionEstablished
-            .bind(onNext: i.onConnectionEstablished.onNext)
+            .bind(to: i.onConnectionEstablished)
             .disposed(by: disposeBag)
         
         onConnectionClosed
-            .bind(onNext: i.onConnectionClosed.onNext)
+            .bind(to: i.onConnectionClosed)
             .disposed(by: disposeBag)
         
-        onMessage
-            .bind(onNext: i.onMessage.onNext)
-            .disposed(by: disposeBag)
+        i.onMessage.bind { message in
+            print(message)
+        }.disposed(by: disposeBag)
+        
+        self.channelInitializer = { [weak self] channel in
+            guard let self = self else { return }
+            
+            self.storeConnection(channel, with: channel.connectionId)
+            self.onConnectionEstablished.onNext(channel.connectionId)
+            
+            _ = channel.closeFuture.map { [weak self] _ in
+                DispatchQueue.main.async { [weak self] in
+                    self?.connections.removeValue(forKey: channel.connectionId)
+                    self?.onConnectionClosed.onNext(channel.connectionId)
+                }
+            }
+            // TODO: Check whether channel and bridge are destroyed - do we need [unowned channel] ?
+            let bridge = BridgeChannelHandler()
+            bridge.onMessage
+                .bind { [weak self, unowned channel] message in self?.onMessage.onNext((channel.connectionId, message)) }
+                .disposed(by: bridge.disposeBag)
+            
+            return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
+        }
         
         return i
     }

@@ -34,13 +34,9 @@ extension UsersManager {
         // external interactions
         let i = Interactor()
         
-        self.sendMessage
-            .bind(onNext: i.sendMessage.onNext)
-            .disposed(by: disposeBag)
-        
-        i.onMessage
-            .bind(onNext: self.onMessage)
-            .disposed(by: disposeBag)
+        i.onMessage.bind { message in
+            print(message)
+        }.disposed(by: disposeBag)
         
         
         i.getUserData = { [weak self] userId in return self?.getUserData(for: userId) }

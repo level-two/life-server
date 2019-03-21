@@ -32,24 +32,16 @@ extension SessionManager {
     public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
         // internal interactions
         
-        
         // external interactions
         let i = Interactor()
         
-        i.onMessage
-            .bind(onNext: self.onMessage)
-            .disposed(by: disposeBag)
+        i.onMessage.bind { message in
+            print(message)
+        }.disposed(by: disposeBag)
         
-        self.sendMessage
-            .bind(onNext: i.sendMessage.onNext)
-            .disposed(by: disposeBag)
-        
-        i.getUserId = { [weak self] connectionId in return self?.getUserId(for: connectionId) }
-        i.getConnectionId = { [weak self] userId in return self?.getConnectionId(for: userId) }
-        i.getLoginStatus = { [weak self] userId in
-            guard let self = self else { return false }
-            return self.getLoginStatus(for: userId)
-        }
+        i.getUserId = { [weak self] connectionId in self?.getUserId(for: connectionId) }
+        i.getConnectionId = { [weak self] userId in self?.getConnectionId(for: userId) }
+        i.getLoginStatus = { [weak self] userId in self?.getLoginStatus(for: userId) ?? false }
         
         return i
     }
