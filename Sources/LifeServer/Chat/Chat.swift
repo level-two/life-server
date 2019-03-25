@@ -27,7 +27,7 @@ public enum ChatError : Error {
 }
 
 
-public class Chat {
+class Chat {
     init() {
     }
     

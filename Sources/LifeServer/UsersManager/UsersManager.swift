@@ -23,19 +23,12 @@ public enum UsersManagerError : Error {
     case UserAlreadyExists
 }
 
-public class UsersManager {
-    init() {
-    }
-    
-    func getUserData(for userId: UserId) -> UserData? {
+public class UsersManager: UserDataProvider {
+    func userData(for userId: UserId) -> UserData? {
         return nil
     }
     
     /*
-    var lastUserId: Int
-    var registeredUsers: [User]
-    var fileHandle: FileHandle
-    
     init?(documentsUrl:URL) throws {
         lastUserId = 0 // TODO Restore previous state during server startup
         registeredUsers = []
@@ -94,5 +87,9 @@ public class UsersManager {
     public func getUser(withName userName:String) -> User? {
         return registeredUsers.first(where: { $0.name == userName })
     }
-    */
+    
+    var lastUserId: Int
+    var registeredUsers: [User]
+    var fileHandle: FileHandle
+ */
 }

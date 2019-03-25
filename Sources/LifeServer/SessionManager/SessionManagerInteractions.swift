@@ -19,14 +19,19 @@ import Foundation
 import RxSwift
 import RxCocoa
 
+
+public protocol LoginStatusProvider: class {
+    func userId(for connectionId: ConnectionId) -> UserId?
+    func connectionId(for userId: UserId) -> ConnectionId?
+    func loginStatus(for userId: UserId) -> Bool
+}
+
 extension SessionManager {
     public class Interactor {
-        let onMessage = PublishSubject<(Server.ConnectionId, SessionManagerMessage)>()
-        let sendMessage = PublishSubject<(Server.ConnectionId, SessionManagerMessage)>()
+        let onMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
+        let sendMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
         
-        fileprivate(set) var getUserId: (Server.ConnectionId) -> UserId? = { _ in nil }
-        fileprivate(set) var getConnectionId: (UserId) -> Server.ConnectionId? = { _ in nil }
-        fileprivate(set) var getLoginStatus: (UserId) -> Bool = { _ in false }
+        fileprivate(set) weak var loginStatusProvider: LoginStatusProvider?
     }
     
     public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
@@ -39,9 +44,7 @@ extension SessionManager {
             print(message)
         }.disposed(by: disposeBag)
         
-        i.getUserId = { [weak self] connectionId in self?.getUserId(for: connectionId) }
-        i.getConnectionId = { [weak self] userId in self?.getConnectionId(for: userId) }
-        i.getLoginStatus = { [weak self] userId in self?.getLoginStatus(for: userId) ?? false }
+        i.loginStatusProvider = self
         
         return i
     }

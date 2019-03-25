@@ -21,8 +21,6 @@ import RxSwift
 import RxCocoa
 
 class Server {
-    public typealias ConnectionId = Int
-    
     deinit {
         // Close all opened sockets...
         //try! self.listenChannel?.close().wait()
@@ -69,7 +67,7 @@ extension Server {
 }
 
 extension Channel {
-    var connectionId: Server.ConnectionId {
+    var connectionId: ConnectionId {
         return ObjectIdentifier(self).hashValue
     }
 }

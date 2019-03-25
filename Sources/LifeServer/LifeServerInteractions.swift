@@ -42,7 +42,7 @@ extension LifeServer {
                 return
             }
             
-            guard let userId = sessionManagerInteractor.getUserId(connectionId) else { return }
+            guard let userId = sessionManagerInteractor.loginStatusProvider?.userId(for: connectionId) else { return }
             
             if let gameplayMessage = try? JSONDecoder().decode(GameplayMessage.self, from: data) {
                 gameplayInteractor.onMessage.onNext((userId, gameplayMessage))
@@ -66,23 +66,23 @@ extension LifeServer {
         }.disposed(by: disposeBag)
         
         gameplayInteractor.sendMessage.bind { userId, message in
-            guard let connectionId = sessionManagerInteractor.getConnectionId(userId) else { return }
+            guard let connectionId = sessionManagerInteractor.loginStatusProvider?.connectionId(for: userId) else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
         chatInteractor.sendMessage.bind { userId, message in
-            guard let connectionId = sessionManagerInteractor.getConnectionId(userId) else { return }
+            guard let connectionId = sessionManagerInteractor.loginStatusProvider?.connectionId(for: userId) else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
         
         chatInteractor.getLoginStatus = { [weak sessionManagerInteractor] userId in
-            return sessionManagerInteractor?.getLoginStatus(userId) ?? false
+            return sessionManagerInteractor?.loginStatusProvider?.loginStatus(for: userId) ?? false
         }
         
         chatInteractor.getUserData = { [weak usersManagerInteractor] userId in
-            return usersManagerInteractor?.getUserData(userId)
+            return usersManagerInteractor?.userDataProvider?.userData(for: userId)
         }
         
         let i = LifeServer.Interactor()

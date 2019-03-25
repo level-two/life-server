@@ -34,19 +34,19 @@ enum SessionManagerError : Error {
     case NoSessionForConnection
 }
 
-class SessionManager {
+class SessionManager : LoginStatusProvider {
     init() {
     }
     
-    func getUserId(for connectionId: Server.ConnectionId) -> UserId? {
+    func userId(for connectionId: ConnectionId) -> UserId? {
         return nil
     }
     
-    func getConnectionId(for userId: UserId) -> Server.ConnectionId? {
+    func connectionId(for userId: UserId) -> ConnectionId? {
         return nil
     }
     
-    func getLoginStatus(for userId: UserId) -> Bool {
+    func loginStatus(for userId: UserId) -> Bool {
         return false
     }
     

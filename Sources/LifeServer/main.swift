@@ -42,5 +42,5 @@ try server.runServer()
 
 let lifeServer = LifeServer()
 let lifeServerInteractor = lifeServer.assembleInteractions()
-lifeServerInteractor.runServer("192.168.100.64", 1337)
+lifeServerInteractor.runServer("127.0.0.1", 1337)
 dispatchMain()

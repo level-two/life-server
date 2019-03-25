@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		931804DB2247AFD800D73F5D /* ServerDataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931804DA2247AFD800D73F5D /* ServerDataTypes.swift */; };
 		OBJ_439 /* c-atomics.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_330 /* c-atomics.c */; };
 		OBJ_441 /* CNIOAtomics.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_332 /* CNIOAtomics.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_442 /* cpp_magic.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_333 /* cpp_magic.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -635,6 +636,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		931804DA2247AFD800D73F5D /* ServerDataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDataTypes.swift; sourceTree = "<group>"; };
 		"LifeServer::LifeServer::Product" /* LifeServer */ = {isa = PBXFileReference; lastKnownFileType = text; path = LifeServer; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_10 /* Chat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chat.swift; sourceTree = "<group>"; };
 		OBJ_100 /* RxTabBarDelegateProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RxTabBarDelegateProxy.swift; sourceTree = "<group>"; };
@@ -1377,6 +1379,7 @@
 				OBJ_22 /* EventLoopFuture+Cascade.swift */,
 				OBJ_23 /* FrameChannelHandler.swift */,
 				OBJ_24 /* Server.swift */,
+				931804DA2247AFD800D73F5D /* ServerDataTypes.swift */,
 				OBJ_25 /* ServerInteractions.swift */,
 			);
 			path = Server;
@@ -1894,7 +1897,7 @@
 			path = ".build/checkouts/RxSwift.git--6932436452446381921/Sources/RxCocoa";
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
@@ -1903,7 +1906,6 @@
 				OBJ_40 /* Dependencies */,
 				OBJ_420 /* Products */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_7 /* Sources */ = {
@@ -2305,7 +2307,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_420 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -2381,6 +2383,7 @@
 				OBJ_488 /* EventLoopFuture+Cascade.swift in Sources */,
 				OBJ_489 /* FrameChannelHandler.swift in Sources */,
 				OBJ_490 /* Server.swift in Sources */,
+				931804DB2247AFD800D73F5D /* ServerDataTypes.swift in Sources */,
 				OBJ_491 /* ServerInteractions.swift in Sources */,
 				OBJ_492 /* SessionManager.swift in Sources */,
 				OBJ_493 /* SessionManagerInteractions.swift in Sources */,

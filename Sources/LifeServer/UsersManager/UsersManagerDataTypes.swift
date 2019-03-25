@@ -17,7 +17,7 @@
 
 import Foundation
 
-typealias UserId = Int
+public typealias UserId = Int
 
 struct UserData: Codable {
     var userName: String
