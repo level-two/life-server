@@ -18,26 +18,21 @@
 import Foundation
 
 enum UsersManagerMessage: Codable {
-    case sendChatMessage(message: String)
-    case getChatMessages(fromId: Int?, count: Int?)
-    case chatMessage(message: ChatMessage)
-    case chatMessages(messages: [ChatMessage]?, error: String?)
+    case createUser(userName: String, color: Color)
+    case createUserResponse(userData: UserData?, error: String?)
 }
 
 extension UsersManagerMessage {
     private enum CodingKeys: String, CodingKey {
-        case sendChatMessage
-        case getChatMessages
-        case chatMessage
-        case chatMessages
+        case createUser
+        case createUserResponse
     }
 
     private enum AuxCodingKeys: String, CodingKey {
-        case user
+        case userData
+        case userName
+        case color
         case error
-        case messages
-        case fromId
-        case count
     }
 
     public init(from decoder: Decoder) throws {
@@ -48,10 +43,8 @@ extension UsersManagerMessage {
             return try container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: key).decode(T.self, forKey: auxKey)
         }
         switch key {
-        case .sendChatMessage:    self = try .sendChatMessage(message: dec())
-        case .chatMessage:        self = try .chatMessage(message: dec())
-        case .chatMessages:       self = try .chatMessages(messages: dec(.messages), error: dec(.error))
-        case .getChatMessages:    self = try .getChatMessages(fromId: dec(.fromId), count: dec(.count))
+        case .createUser: self = try .createUser(userName: dec(.userName), color: dec(.color))
+        case .createUserResponse: self = try .createUserResponse(userData: dec(.userData), error: dec(.error))
         }
     }
 
@@ -59,18 +52,14 @@ extension UsersManagerMessage {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         switch self {
-        case .sendChatMessage(let message):
-            try container.encode(message, forKey: .sendChatMessage)
-        case .chatMessage(let message):
-            try container.encode(message, forKey: .chatMessage)
-        case .chatMessages(let messages, let error):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .chatMessages)
-            try nestedContainter.encode(messages, forKey: .messages)
+        case .createUser(let userName, let color):
+            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .createUser)
+            try nestedContainter.encode(userName, forKey: .userName)
+            try nestedContainter.encode(color, forKey: .color)
+        case .createUserResponse(let userData, let error):
+            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .createUserResponse)
+            try nestedContainter.encode(userData, forKey: .userData)
             try nestedContainter.encode(error, forKey: .error)
-        case .getChatMessages(let fromId, let count):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .getChatMessages)
-            try nestedContainter.encode(fromId, forKey: .fromId)
-            try nestedContainter.encode(count, forKey: .count)
         }
     }
 }

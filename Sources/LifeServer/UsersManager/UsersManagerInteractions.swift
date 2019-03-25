@@ -32,17 +32,21 @@ extension UsersManager {
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> UsersManager.Interactor {
-        // internal interactions
+        let interactor = Interactor()
 
-        // external interactions
-        let usersManagerInteractor = Interactor()
+        interactor.userDataProvider = self
 
-        usersManagerInteractor.onMessage.bind { message in
-            print(message)
+        interactor.onMessage.bind { connectionId, message in
+            guard case .createUser(let userName, let color) = message else { return }
+            do {
+                let userData = try self.createUser(with: userName, and: color)
+                interactor.sendMessage.onNext((connectionId, .createUserResponse(userData: userData, error: nil)))
+            } catch {
+                interactor.sendMessage
+                    .onNext((connectionId, .createUserResponse(userData: nil, error: error.localizedDescription)))
+            }
         }.disposed(by: disposeBag)
 
-        usersManagerInteractor.userDataProvider = self
-
-        return usersManagerInteractor
+        return interactor
     }
 }

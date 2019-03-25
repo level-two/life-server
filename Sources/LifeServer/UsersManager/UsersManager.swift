@@ -63,8 +63,7 @@ public class UsersManager {
     }
 
     public func createUser(with userName: String, and color: Color) throws -> UserData {
-        // return nil if user with this name exists
-        if let _ = registeredUsers.first(where: { $0.userName == userName }) {
+        guard registeredUsers.allSatisfy({ $0.userName != userName }) else {
             throw UsersManagerError.userAlreadyExists
         }
 
@@ -72,6 +71,8 @@ public class UsersManager {
         let userId = lastUserId
 
         let user = UserData(userName: userName, userId: userId, color: color)
+
+        // Store to DB
         registeredUsers.append(user)
 
         let userJson = try JSONEncoder().encode(user)
@@ -83,14 +84,6 @@ public class UsersManager {
         return user
     }
 
-    public func getUser(with userId: Int) -> UserData? {
-        return registeredUsers.first(where: { $0.userId == userId })
-    }
-
-    public func getUser(with userName: String) -> UserData? {
-        return registeredUsers.first(where: { $0.userName == userName })
-    }
-
     var lastUserId: Int
     var registeredUsers: [UserData]
     var fileHandle: FileHandle
@@ -98,6 +91,6 @@ public class UsersManager {
 
 extension UsersManager: UserDataProvider {
     public func userData(for userId: UserId) -> UserData? {
-        return nil
+        return registeredUsers.first(where: { $0.userId == userId })
     }
 }
