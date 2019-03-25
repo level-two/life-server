@@ -16,7 +16,7 @@ analyzer_rules: # Rules run by `swiftlint analyze` (experimental)
   - explicit_self
 
 # implicitly
-line_length: 110
+line_length: 120
 # they can set both implicitly with an array
 type_body_length:
   - 300 # warning
