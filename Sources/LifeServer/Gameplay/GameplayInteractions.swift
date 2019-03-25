@@ -29,12 +29,12 @@ extension Gameplay {
         // internal interactions
 
         // external interactions
-        let i = Gameplay.Interactor()
+        let gameplayInteractor = Gameplay.Interactor()
 
-        i.onMessage.bind { message in
+        gameplayInteractor.onMessage.bind { message in
             print(message)
         }.disposed(by: disposeBag)
 
-        return i
+        return gameplayInteractor
     }
 }

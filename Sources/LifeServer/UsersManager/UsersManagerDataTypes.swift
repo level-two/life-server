@@ -26,22 +26,22 @@ public struct UserData: Codable {
 }
 
 public struct Color: Codable {
-    let r, g, b, a: CGFloat
+    let red, green, blue, alpha: CGFloat
 }
 
 extension Color {
     public init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        r = try container.decode(CGFloat.self)/255
-        g = try container.decode(CGFloat.self)/255
-        b = try container.decode(CGFloat.self)/255
-        a = try container.decode(CGFloat.self)/255
+        red = try container.decode(CGFloat.self)/255
+        green = try container.decode(CGFloat.self)/255
+        blue = try container.decode(CGFloat.self)/255
+        alpha = try container.decode(CGFloat.self)/255
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.unkeyedContainer()
-        try container.encode(Int(r*255))
-        try container.encode(Int(g*255))
-        try container.encode(Int(b*255))
-        try container.encode(Int(a*255))
+        try container.encode(Int(red*255))
+        try container.encode(Int(green*255))
+        try container.encode(Int(blue*255))
+        try container.encode(Int(alpha*255))
     }
 }

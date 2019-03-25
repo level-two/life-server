@@ -85,9 +85,9 @@ extension LifeServer {
             return usersManagerInteractor?.userDataProvider?.userData(for: userId)
         }
 
-        let i = LifeServer.Interactor()
-        i.runServer = { [weak serverInteractor] host, port in serverInteractor?.runServer(host, port) }
+        let lifeServerInteractor = LifeServer.Interactor()
+        lifeServerInteractor.runServer = { [weak serverInteractor] host, port in serverInteractor?.runServer(host, port) }
 
-        return i
+        return lifeServerInteractor
     }
 }

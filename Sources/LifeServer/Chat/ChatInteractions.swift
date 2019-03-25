@@ -32,14 +32,14 @@ extension Chat {
         // internal interactions
 
         // external interactions
-        let i = Interactor()
+        let chatInteractor = Interactor()
 
-        i.onMessage.bind { message in
+        chatInteractor.onMessage.bind { message in
             print(message)
         }.disposed(by: disposeBag)
 
         // use getUserData and getLoginStatus here
 
-        return i
+        return chatInteractor
     }
 }

@@ -23,8 +23,12 @@ import RxCocoa
 class Server {
     deinit {
         // Close all opened sockets...
-        //try! self.listenChannel?.close().wait()
-        try! self.group.syncShutdownGracefully()
+        do {
+            try self.listenChannel?.close().wait()
+            try self.group.syncShutdownGracefully()
+        } catch {
+            print("Failed to gracefully shut down server: \(error)")
+        }
     }
 
     var listenChannel: Channel?

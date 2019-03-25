@@ -40,7 +40,7 @@ extension EventLoopFuture {
     ///     - promise: The `EventLoopPromise` to fulfill with the results of this future.
     ///                Cascaded when provided promise is non-nil
     public func cascade(promise: EventLoopPromise<T>?) {
-        guard let p = promise else { return }
-        self.cascade(promise: p)
+        guard promise != nil else { return }
+        self.cascade(promise: promise)
     }
 }

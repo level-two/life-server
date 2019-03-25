@@ -35,14 +35,14 @@ extension UsersManager {
         // internal interactions
 
         // external interactions
-        let i = Interactor()
+        let usersManagerInteractor = Interactor()
 
-        i.onMessage.bind { message in
+        usersManagerInteractor.onMessage.bind { message in
             print(message)
         }.disposed(by: disposeBag)
 
-        i.userDataProvider = self
+        usersManagerInteractor.userDataProvider = self
 
-        return i
+        return usersManagerInteractor
     }
 }

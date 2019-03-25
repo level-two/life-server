@@ -20,18 +20,18 @@ import RxSwift
 import RxCocoa
 
 enum SessionManagerError: Error {
-    case InvalidUserCreateRequest
-    case InvalidUserLoginRequest
-    case InvalidUserLogoutRequest
-    case UserDoesntExist
-    case CreateUserReturnedNil
-    case UserIsNotLoggedIn
-    case UserAlreadyLoggedIn
-    case UserAlreadyLoggedInOnOtherConnection
-    case AnotherUserAlreadyLoggedIn
-    case UserAlreadyLoggedOut
-    case InvalidUserIdForLogout
-    case NoSessionForConnection
+    case invalidUserCreateRequest
+    case invalidUserLoginRequest
+    case invalidUserLogoutRequest
+    case userDoesntExist
+    case createUserReturnedNil
+    case userIsNotLoggedIn
+    case userAlreadyLoggedIn
+    case userAlreadyLoggedInOnOtherConnection
+    case anotherUserAlreadyLoggedIn
+    case userAlreadyLoggedOut
+    case invalidUserIdForLogout
+    case noSessionForConnection
 }
 
 class SessionManager: LoginStatusProvider {

@@ -20,10 +20,10 @@ import RxSwift
 import RxCocoa
 
 public enum ChatError: Error {
-    case MessageFromAnonymousUser
-    case LogFileInvalidHandler
-    case InvalidChatMessagesRequest
-    case InvalidChatMessage
+    case messageFromAnonymousUser
+    case logFileInvalidHandler
+    case invalidChatMessagesRequest
+    case invalidChatMessage
 }
 
 class Chat {

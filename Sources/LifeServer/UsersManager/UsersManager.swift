@@ -20,7 +20,7 @@ import RxSwift
 import RxCocoa
 
 public enum UsersManagerError: Error {
-    case UserAlreadyExists
+    case userAlreadyExists
 }
 
 public class UsersManager {

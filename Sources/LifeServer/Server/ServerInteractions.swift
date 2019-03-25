@@ -21,7 +21,7 @@ import RxSwift
 import RxCocoa
 
 extension Server {
-    public class ServerInteractor {
+    public class Interactor {
         let onConnectionEstablished = PublishSubject<ConnectionId>()
         let onConnectionClosed      = PublishSubject<ConnectionId>()
         let onMessage               = PublishSubject<(ConnectionId, Data)>()
@@ -31,31 +31,31 @@ extension Server {
         fileprivate(set) var runServer: (_ host: String, _ port: Int) -> Void = { _, _ in }
     }
 
-    public func assembleInteractions(disposeBag: DisposeBag) -> ServerInteractor {
-        let i = ServerInteractor()
+    public func assembleInteractions(disposeBag: DisposeBag) -> Server.Interactor {
+        let serverInteractor = Server.Interactor()
 
-        i.sendMessage
+        serverInteractor.sendMessage
             .observeOn(MainScheduler.instance)
             .bind { [weak self] connectionId, data in self?.send(data, for: connectionId) }
             .disposed(by: disposeBag)
 
-        i.runServer = { [weak self, weak i] host, port in
+        serverInteractor.runServer = { [weak self, weak serverInteractor] host, port in
             guard let self = self else { return }
 
-            let bootstrap = self.makeBootstrap { [weak self, weak i] channel in
+            let bootstrap = self.makeBootstrap { [weak self, weak serverInteractor] channel in
                 let connectionId = channel.connectionId
 
                 self?.storeConnection(channel, with: connectionId)
-                i?.onConnectionEstablished.onNext(connectionId)
+                serverInteractor?.onConnectionEstablished.onNext(connectionId)
 
-                _ = channel.closeFuture.map { [weak self, weak i] _ in
+                _ = channel.closeFuture.map { [weak self, weak serverInteractor] _ in
                     self?.removeConnection(with: connectionId)
-                    i?.onConnectionClosed.onNext(connectionId)
+                    serverInteractor?.onConnectionClosed.onNext(connectionId)
                 }
 
                 let bridge = BridgeChannelHandler()
                 bridge.onMessage
-                    .bind { [weak i] message in i?.onMessage.onNext((connectionId, message)) }
+                    .bind { [weak serverInteractor] message in serverInteractor?.onMessage.onNext((connectionId, message)) }
                     .disposed(by: bridge.disposeBag)
 
                 return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
@@ -69,6 +69,6 @@ extension Server {
             print("Server started and listening on \(localAddress)")
         }
 
-        return i
+        return serverInteractor
     }
 }

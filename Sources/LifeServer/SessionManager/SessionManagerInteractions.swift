@@ -37,14 +37,14 @@ extension SessionManager {
         // internal interactions
 
         // external interactions
-        let i = Interactor()
+        let sessionManagerInteractor = Interactor()
 
-        i.onMessage.bind { message in
+        sessionManagerInteractor.onMessage.bind { message in
             print(message)
         }.disposed(by: disposeBag)
 
-        i.loginStatusProvider = self
+        sessionManagerInteractor.loginStatusProvider = self
 
-        return i
+        return sessionManagerInteractor
     }
 }
