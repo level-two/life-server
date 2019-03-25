@@ -2008,9 +2008,10 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = OBJ_474 /* Build configuration list for PBXNativeTarget "LifeServer" */;
 			buildPhases = (
+				931804E12248E7D200D73F5D /* SwiftLint autocorrect */,
 				OBJ_477 /* Sources */,
 				OBJ_502 /* Frameworks */,
-				931804E02248E01C00D73F5D /* ShellScript */,
+				931804E02248E01C00D73F5D /* SwiftLint */,
 			);
 			buildRules = (
 			);
@@ -2334,7 +2335,7 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		931804E02248E01C00D73F5D /* ShellScript */ = {
+		931804E02248E01C00D73F5D /* SwiftLint */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -2343,6 +2344,7 @@
 			);
 			inputPaths = (
 			);
+			name = SwiftLint;
 			outputFileListPaths = (
 			);
 			outputPaths = (
@@ -2350,6 +2352,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nif which swiftlint >/dev/null; then\n  swiftlint\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
+		};
+		931804E12248E7D200D73F5D /* SwiftLint autocorrect */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "SwiftLint autocorrect";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nif which swiftlint >/dev/null; then\n  swiftlint autocorrect\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
