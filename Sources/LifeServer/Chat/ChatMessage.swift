@@ -45,7 +45,9 @@ extension ChatMessage {
         guard let key = container.allKeys.first else { throw "No valid keys in: \(container)" }
         func dec<T: Decodable>() throws -> T { return try container.decode(T.self, forKey: key) }
         func dec<T: Decodable>(_ auxKey: AuxCodingKeys) throws -> T {
-            return try container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: key).decode(T.self, forKey: auxKey)
+            return try container
+                .nestedContainer(keyedBy: AuxCodingKeys.self, forKey: key)
+                .decode(T.self, forKey: auxKey)
         }
         switch key {
         case .sendChatMessage:    self = try .sendChatMessage(message: dec())
@@ -64,11 +66,13 @@ extension ChatMessage {
         case .chatMessage(let message):
             try container.encode(message, forKey: .chatMessage)
         case .chatMessages(let messages, let error):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .chatMessages)
+            var nestedContainter = container
+                .nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .chatMessages)
             try nestedContainter.encode(messages, forKey: .messages)
             try nestedContainter.encode(error, forKey: .error)
         case .getChatMessages(let fromId, let count):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .getChatMessages)
+            var nestedContainter = container
+                .nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .getChatMessages)
             try nestedContainter.encode(fromId, forKey: .fromId)
             try nestedContainter.encode(count, forKey: .count)
         }

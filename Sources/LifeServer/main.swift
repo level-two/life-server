@@ -17,18 +17,6 @@
 
 import Foundation
 
-/*
-let port = 1337
-let server = Server(port: port)
-let usersManager = try UsersManager(documentsUrl: url)
-let sessionManager = SessionManager(withServer: server, usersManager: usersManager!)
-let chat = try Chat(sessionManager: sessionManager, usersManager: usersManager!, documentsUrl: url)
-let gameplay = Gameplay()
-
-try server.runServer()
- 
- */
-
 let lifeServer = LifeServer()
 let lifeServerInteractor = lifeServer.assembleInteractions()
 lifeServerInteractor.runServer("127.0.0.1", 1337)
