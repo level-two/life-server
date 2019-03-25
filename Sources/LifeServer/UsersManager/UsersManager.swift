@@ -24,79 +24,76 @@ public enum UsersManagerError: Error {
 }
 
 public class UsersManager {
-    init() {
-
-    }
-
-    /*
-    init?() throws {
-        lastUserId = 0 // TODO Restore previous state during server startup
+    init() throws {
+        lastUserId = 0
         registeredUsers = []
-        
-        guard let usersFileUrl = URL.applicationDocumentsDirectory?.appendingPathComponent("RegisteredUsers.json") else { throw "Failed to get url to RegisteredUsers.json" }
-        
+
+        guard let usersFileUrl = URL.applicationDocumentsDirectory?.appendingPathComponent("RegisteredUsers.json")
+            else { throw "Failed to get url to RegisteredUsers.json" }
+
         if FileManager.default.fileExists(atPath: usersFileUrl.path) == false {
-            FileManager.default.createFile(atPath: usersFileUrl.path, contents: "[\n]".data(using:.utf8)!, attributes: nil)
+            let result = FileManager.default.createFile(atPath: usersFileUrl.path,
+                                           contents: "[\n]".data(using: .utf8)!,
+                                           attributes: nil)
+            guard result else { throw "Failed to create file: \(usersFileUrl.description)" }
         }
-        
+
         do {
             fileHandle = try FileHandle(forUpdating: usersFileUrl)
-        }
-        catch {
+        } catch {
             throw "Failed to open \(usersFileUrl.description) for update"
         }
-    
+
         let data = fileHandle.readDataToEndOfFile()
-        
+
         do {
             self.registeredUsers = try JSONDecoder().decode([UserData].self, from: data)
-        }
-        catch {
+        } catch {
             fileHandle.closeFile()
             throw "Failed to decode registered users: \(error)"
         }
-        
+
         if let lastId = registeredUsers.last?.userId {
             self.lastUserId = lastId
         }
     }
-    
+
     deinit {
         fileHandle.closeFile()
     }
-    
-    public func createUser(withName name:String, withColor color:[Int]) throws -> UserData {
+
+    public func createUser(with userName: String, and color: Color) throws -> UserData {
         // return nil if user with this name exists
-        if let _ = registeredUsers.first(where:{ $0.userName == name }) {
-            throw UsersManagerError.UserAlreadyExists
+        if let _ = registeredUsers.first(where: { $0.userName == userName }) {
+            throw UsersManagerError.userAlreadyExists
         }
-        
+
         self.lastUserId += 1
         let userId = lastUserId
-        
-        let user = UserData(name: name, color: color, userId: userId)
+
+        let user = UserData(userName: userName, userId: userId, color: color)
         registeredUsers.append(user)
-        
+
         let userJson = try JSONEncoder().encode(user)
-        
-        fileHandle.seek(toFileOffset:fileHandle.offsetInFile-1)
+
+        fileHandle.seek(toFileOffset: fileHandle.offsetInFile-1)
         fileHandle.write(userJson)
-        fileHandle.write(",\n]".data(using:.utf8)!)
-        
+        fileHandle.write(",\n]".data(using: .utf8)!)
+
         return user
     }
-    
-    public func getUser(withId userId:Int) -> UserData? {
+
+    public func getUser(with userId: Int) -> UserData? {
         return registeredUsers.first(where: { $0.userId == userId })
     }
-    
-    public func getUser(withName userName:String) -> UserData? {
-        return registeredUsers.first(where: { $0.name == userName })
+
+    public func getUser(with userName: String) -> UserData? {
+        return registeredUsers.first(where: { $0.userName == userName })
     }
+
     var lastUserId: Int
     var registeredUsers: [UserData]
     var fileHandle: FileHandle
-     */
 }
 
 extension UsersManager: UserDataProvider {
