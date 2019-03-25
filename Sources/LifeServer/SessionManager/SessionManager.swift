@@ -19,7 +19,7 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-enum SessionManagerError : Error {
+enum SessionManagerError: Error {
     case InvalidUserCreateRequest
     case InvalidUserLoginRequest
     case InvalidUserLogoutRequest
@@ -34,22 +34,22 @@ enum SessionManagerError : Error {
     case NoSessionForConnection
 }
 
-class SessionManager : LoginStatusProvider {
+class SessionManager: LoginStatusProvider {
     init() {
     }
-    
+
     func userId(for connectionId: ConnectionId) -> UserId? {
         return nil
     }
-    
+
     func connectionId(for userId: UserId) -> ConnectionId? {
         return nil
     }
-    
+
     func loginStatus(for userId: UserId) -> Bool {
         return false
     }
-    
+
     /*
     public let messageEvent = Event3<Int, Int, [String:Any]>()
     public let userLoginEvent = Event<Int>()

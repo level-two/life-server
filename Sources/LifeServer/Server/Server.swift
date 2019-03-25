@@ -26,11 +26,11 @@ class Server {
         //try! self.listenChannel?.close().wait()
         try! self.group.syncShutdownGracefully()
     }
-    
+
     var listenChannel: Channel?
-    var connections = [ConnectionId:Channel]()
+    var connections = [ConnectionId: Channel]()
     let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-    
+
     func makeBootstrap(with channelInitializer: @escaping (Channel)->EventLoopFuture<Void>) -> ServerBootstrap {
         return ServerBootstrap(group: self.group)
             // Specify backlog and enable SO_REUSEADDR for the server itself
@@ -44,13 +44,13 @@ class Server {
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
     }
-    
+
     func storeConnection(_ connection: Channel, with connectionId: ConnectionId) {
         DispatchQueue.main.async { [weak self] in
             self?.connections[connectionId] = connection
         }
     }
-    
+
     func removeConnection(with connectionId: ConnectionId) {
         DispatchQueue.main.async { [weak self] in
             self?.connections.removeValue(forKey: connectionId)

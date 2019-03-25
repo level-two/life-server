@@ -27,23 +27,22 @@ extension UsersManager {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, UsersManagerMessage)>()
         let sendMessage = PublishSubject<(ConnectionId, UsersManagerMessage)>()
-        
+
         fileprivate(set) weak var userDataProvider: UserDataProvider?
     }
-    
+
     public func assembleInteractions(disposeBag: DisposeBag) -> UsersManager.Interactor {
         // internal interactions
-        
-        
+
         // external interactions
         let i = Interactor()
-        
+
         i.onMessage.bind { message in
             print(message)
         }.disposed(by: disposeBag)
-        
+
         i.userDataProvider = self
-        
+
         return i
     }
 }

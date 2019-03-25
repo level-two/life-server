@@ -24,18 +24,17 @@ extension Gameplay {
         let onMessage = PublishSubject<(UserId, GameplayMessage)>()
         let sendMessage = PublishSubject<(UserId, GameplayMessage)>()
     }
-    
+
     public func assembleInteractions(disposeBag: DisposeBag) -> Gameplay.Interactor {
         // internal interactions
-        
-        
+
         // external interactions
         let i = Gameplay.Interactor()
-        
+
         i.onMessage.bind { message in
             print(message)
         }.disposed(by: disposeBag)
-        
+
         return i
     }
 }

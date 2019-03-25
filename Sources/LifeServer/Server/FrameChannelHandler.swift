@@ -21,9 +21,9 @@ import NIO
 final class FrameChannelHandler: ChannelInboundHandler {
     public typealias InboundIn = ByteBuffer
     public typealias InboundOut = Data
-    
+
     var collected = ""
-    
+
     public func channelRead(ctx: ChannelHandlerContext, byteBufWrapped: NIOAny) {
         let byteBuf = self.unwrapInboundIn(byteBufWrapped)
         guard let chunk = byteBuf.getString(at: byteBuf.readerIndex, length: byteBuf.readableBytes) else {
@@ -31,20 +31,20 @@ final class FrameChannelHandler: ChannelInboundHandler {
             return
         }
         collected += chunk
-        
+
         while let newlineRange = collected.rangeOfCharacter(from: .newlines) {
             let message = collected[..<newlineRange.lowerBound]
-         
+
             if let data = message.data(using: .utf8) {
                 ctx.fireChannelRead(self.wrapInboundOut(data))
             } else {
                 ctx.fireErrorCaught("Failed to get data for message frame")
             }
-            
+
             collected.removeSubrange(..<newlineRange.upperBound)
         }
     }
-    
+
     public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
         print("CollectingInboundHandler caught error: ", error)
         ctx.close(promise: nil)

@@ -29,12 +29,12 @@ extension SessionManagerMessage {
         case login
         case logout
     }
-    
+
     private enum AuxCodingKeys: String, CodingKey {
         case user
         case error
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         guard let key = container.allKeys.first else { throw "No valid keys in: \(container)" }
@@ -48,17 +48,17 @@ extension SessionManagerMessage {
         case .createUser:         self = try .createUser(user: dec())
         }
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        
+
         switch self {
         case .login(let userName):
-            try container.encode(userName, forKey:.login)
+            try container.encode(userName, forKey: .login)
         case .logout(let userName):
-            try container.encode(userName, forKey:.logout)
+            try container.encode(userName, forKey: .logout)
         case .createUser(let user):
-            try container.encode(user, forKey:.createUser)
+            try container.encode(user, forKey: .createUser)
         }
     }
 }

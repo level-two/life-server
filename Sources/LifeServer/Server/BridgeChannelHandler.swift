@@ -25,16 +25,16 @@ final class BridgeChannelHandler: ChannelInboundHandler {
 
     public let onMessage = PublishSubject<Data>()
     public let disposeBag = DisposeBag()
-    
+
     deinit {
         print("[DEBUG!!] 🔥 BridgeChannelHandler deinit!")
     }
-    
+
     public func channelRead(ctx: ChannelHandlerContext, messageIn: NIOAny) {
         let data = self.unwrapInboundIn(messageIn)
         onMessage.onNext(data)
     }
-    
+
     public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
         print("Bridge caught error: ", error)
         ctx.close(promise: nil)

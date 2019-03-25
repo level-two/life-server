@@ -19,17 +19,15 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-public enum UsersManagerError : Error {
+public enum UsersManagerError: Error {
     case UserAlreadyExists
 }
 
-
-
 public class UsersManager {
     init() {
-        
+
     }
-    
+
     /*
     init?() throws {
         lastUserId = 0 // TODO Restore previous state during server startup
@@ -101,7 +99,7 @@ public class UsersManager {
      */
 }
 
-extension UsersManager : UserDataProvider {
+extension UsersManager: UserDataProvider {
     public func userData(for userId: UserId) -> UserData? {
         return nil
     }

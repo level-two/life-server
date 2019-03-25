@@ -21,73 +21,73 @@ import RxCocoa
 
 extension LifeServer {
     public class Interactor {
-        fileprivate(set) var runServer: (_ host: String, _ port: Int) -> () = { _, _ in }
+        fileprivate(set) var runServer: (_ host: String, _ port: Int) -> Void = { _, _ in }
     }
-    
+
     public func assembleInteractions() -> LifeServer.Interactor {
         let serverInteractor = server.assembleInteractions(disposeBag: disposeBag)
         let sessionManagerInteractor = sessionManager.assembleInteractions(disposeBag: disposeBag)
         let usersManagerInteractor = usersManager.assembleInteractions(disposeBag: disposeBag)
         let gameplayInteractor = gameplay.assembleInteractions(disposeBag: disposeBag)
         let chatInteractor = chat.assembleInteractions(disposeBag: disposeBag)
-        
+
         serverInteractor.onMessage.bind { connectionId, data in
             if let sessionManagerMessage = try? JSONDecoder().decode(SessionManagerMessage.self, from: data) {
                 sessionManagerInteractor.onMessage.onNext((connectionId, sessionManagerMessage))
                 return
             }
-            
+
             if let usersManagerMessage = try? JSONDecoder().decode(UsersManagerMessage.self, from: data) {
                 usersManagerInteractor.onMessage.onNext((connectionId, usersManagerMessage))
                 return
             }
-            
+
             guard let userId = sessionManagerInteractor.loginStatusProvider?.userId(for: connectionId) else { return }
-            
+
             if let gameplayMessage = try? JSONDecoder().decode(GameplayMessage.self, from: data) {
                 gameplayInteractor.onMessage.onNext((userId, gameplayMessage))
                 return
             }
-            
+
             if let chatMessage = try? JSONDecoder().decode(ChatMessage.self, from: data) {
                 chatInteractor.onMessage.onNext((userId, chatMessage))
                 return
             }
         }.disposed(by: disposeBag)
-        
+
         sessionManagerInteractor.sendMessage.bind { connectionId, message in
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
-        
+
         usersManagerInteractor.sendMessage.bind { connectionId, message in
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
-        
+
         gameplayInteractor.sendMessage.bind { userId, message in
             guard let connectionId = sessionManagerInteractor.loginStatusProvider?.connectionId(for: userId) else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
-        
+
         chatInteractor.sendMessage.bind { userId, message in
             guard let connectionId = sessionManagerInteractor.loginStatusProvider?.connectionId(for: userId) else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
-        
+
         chatInteractor.getLoginStatus = { [weak sessionManagerInteractor] userId in
             return sessionManagerInteractor?.loginStatusProvider?.loginStatus(for: userId) ?? false
         }
-        
+
         chatInteractor.getUserData = { [weak usersManagerInteractor] userId in
             return usersManagerInteractor?.userDataProvider?.userData(for: userId)
         }
-        
+
         let i = LifeServer.Interactor()
         i.runServer = { [weak serverInteractor] host, port in serverInteractor?.runServer(host, port) }
-        
+
         return i
     }
 }

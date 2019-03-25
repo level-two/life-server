@@ -23,24 +23,23 @@ extension Chat {
     public class Interactor {
         let onMessage = PublishSubject<(UserId, ChatMessage)>()
         let sendMessage = PublishSubject<(UserId, ChatMessage)>()
-        
+
         var getLoginStatus: (UserId) -> Bool = { _ in false }
         var getUserData: (UserId) -> UserData? = { _ in nil }
     }
-    
+
     public func assembleInteractions(disposeBag: DisposeBag) -> Chat.Interactor {
         // internal interactions
-        
-        
+
         // external interactions
         let i = Interactor()
-        
+
         i.onMessage.bind { message in
             print(message)
         }.disposed(by: disposeBag)
-        
+
         // use getUserData and getLoginStatus here
-        
+
         return i
     }
 }

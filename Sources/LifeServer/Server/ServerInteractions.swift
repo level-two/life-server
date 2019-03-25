@@ -25,50 +25,50 @@ extension Server {
         let onConnectionEstablished = PublishSubject<ConnectionId>()
         let onConnectionClosed      = PublishSubject<ConnectionId>()
         let onMessage               = PublishSubject<(ConnectionId, Data)>()
-        
+
         let sendMessage             = PublishSubject<(ConnectionId, Data)>()
-        
-        fileprivate(set) var runServer: (_ host: String, _ port: Int) -> () = { _, _ in }
+
+        fileprivate(set) var runServer: (_ host: String, _ port: Int) -> Void = { _, _ in }
     }
-    
+
     public func assembleInteractions(disposeBag: DisposeBag) -> ServerInteractor {
         let i = ServerInteractor()
-        
+
         i.sendMessage
             .observeOn(MainScheduler.instance)
             .bind { [weak self] connectionId, data in self?.send(data, for: connectionId) }
             .disposed(by: disposeBag)
-        
+
         i.runServer = { [weak self, weak i] host, port in
             guard let self = self else { return }
-            
-            let bootstrap = self.makeBootstrap() { [weak self, weak i] channel in
+
+            let bootstrap = self.makeBootstrap { [weak self, weak i] channel in
                 let connectionId = channel.connectionId
-                
+
                 self?.storeConnection(channel, with: connectionId)
                 i?.onConnectionEstablished.onNext(connectionId)
-                
+
                 _ = channel.closeFuture.map { [weak self, weak i] _ in
                     self?.removeConnection(with: connectionId)
                     i?.onConnectionClosed.onNext(connectionId)
                 }
-                
+
                 let bridge = BridgeChannelHandler()
                 bridge.onMessage
                     .bind { [weak i] message in i?.onMessage.onNext((connectionId, message)) }
                     .disposed(by: bridge.disposeBag)
-                
+
                 return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
             }
-            
+
             self.listenChannel = try? bootstrap.bind(host: host, port: port).wait()
             guard let localAddress = self.listenChannel?.localAddress else {
                 fatalError("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")
             }
-            
+
             print("Server started and listening on \(localAddress)")
         }
-        
+
         return i
     }
 }

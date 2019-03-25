@@ -19,7 +19,6 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-
 public protocol LoginStatusProvider: class {
     func userId(for connectionId: ConnectionId) -> UserId?
     func connectionId(for userId: UserId) -> ConnectionId?
@@ -30,22 +29,22 @@ extension SessionManager {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
         let sendMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
-        
+
         fileprivate(set) weak var loginStatusProvider: LoginStatusProvider?
     }
-    
+
     public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
         // internal interactions
-        
+
         // external interactions
         let i = Interactor()
-        
+
         i.onMessage.bind { message in
             print(message)
         }.disposed(by: disposeBag)
-        
+
         i.loginStatusProvider = self
-        
+
         return i
     }
 }

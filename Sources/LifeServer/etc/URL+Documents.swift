@@ -26,7 +26,7 @@ extension URL {
         #endif
         return url
     }
-    
+
     static var applicationDocumentsDirectory: URL? {
         return URL.applicationSupportDirectory?.appendingPathComponent(Bundle.appName)
     }

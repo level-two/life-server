@@ -31,7 +31,7 @@ extension GameplayMessage {
         case chatMessage
         case chatMessages
     }
-    
+
     private enum AuxCodingKeys: String, CodingKey {
         case user
         case error
@@ -39,7 +39,7 @@ extension GameplayMessage {
         case fromId
         case count
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         guard let key = container.allKeys.first else { throw "No valid keys in: \(container)" }
@@ -54,23 +54,23 @@ extension GameplayMessage {
         case .getChatMessages:    self = try .getChatMessages(fromId: dec(.fromId), count: dec(.count))
         }
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        
+
         switch self {
         case .sendChatMessage(let message):
-            try container.encode(message, forKey:.sendChatMessage)
+            try container.encode(message, forKey: .sendChatMessage)
         case .chatMessage(let message):
-            try container.encode(message, forKey:.chatMessage)
+            try container.encode(message, forKey: .chatMessage)
         case .chatMessages(let messages, let error):
             var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .chatMessages)
-            try nestedContainter.encode(messages, forKey:.messages)
-            try nestedContainter.encode(error, forKey:.error)
+            try nestedContainter.encode(messages, forKey: .messages)
+            try nestedContainter.encode(error, forKey: .error)
         case .getChatMessages(let fromId, let count):
             var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .getChatMessages)
-            try nestedContainter.encode(fromId, forKey:.fromId)
-            try nestedContainter.encode(count, forKey:.count)
+            try nestedContainter.encode(fromId, forKey: .fromId)
+            try nestedContainter.encode(count, forKey: .count)
         }
     }
 }

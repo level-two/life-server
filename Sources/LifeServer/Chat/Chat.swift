@@ -19,18 +19,17 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-public enum ChatError : Error {
+public enum ChatError: Error {
     case MessageFromAnonymousUser
     case LogFileInvalidHandler
     case InvalidChatMessagesRequest
     case InvalidChatMessage
 }
 
-
 class Chat {
     init() {
     }
-    
+
     /*
     weak var sessionManager: SessionManager?
     weak var usersManager: UsersManager?
