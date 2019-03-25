@@ -18,17 +18,6 @@
 import Foundation
 
 /*
-#if os(Linux)
-var url = URL(fileURLWithPath: "/var/lib")
-#elseif os(macOS)
-var url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-#endif
-url.appendPathComponent("LifeServer/")
-
-if FileManager.default.fileExists(atPath: url.path) == false {
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
-}
-
 let port = 1337
 let server = Server(port: port)
 let usersManager = try UsersManager(documentsUrl: url)

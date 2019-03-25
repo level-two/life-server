@@ -17,31 +17,10 @@
 
 import Foundation
 
-public typealias UserId = Int
-
-public struct UserData: Codable {
-    var userName: String
-    var userId: UserId?
-    var color: Color
-}
-
-public struct Color: Codable {
-    let r, g, b, a: CGFloat
-}
-
-extension Color {
-    public init(from decoder: Decoder) throws {
-        var container = try decoder.unkeyedContainer()
-        r = try container.decode(CGFloat.self)/255
-        g = try container.decode(CGFloat.self)/255
-        b = try container.decode(CGFloat.self)/255
-        a = try container.decode(CGFloat.self)/255
-    }
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.unkeyedContainer()
-        try container.encode(Int(r*255))
-        try container.encode(Int(g*255))
-        try container.encode(Int(b*255))
-        try container.encode(Int(a*255))
+extension Bundle {
+    static var appName: String {
+        guard let dic = Bundle.main.infoDictionary else { fatalError("Couldn't get Bundle.main.infoDictionary") }
+        guard let name = dic["CFBundleName"] as? String else { fatalError("Couldn't get CFBundleName") }
+        return name
     }
 }
