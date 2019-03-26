@@ -19,7 +19,7 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-class LifeServer {
+open class LifeServerCore {
     let server = Server()
     let sessionManager = SessionManager()
     let usersManager: UsersManager
@@ -28,7 +28,7 @@ class LifeServer {
 
     let disposeBag = DisposeBag()
 
-    init() {
+    public init() {
         do {
             usersManager = try UsersManager()
         } catch {

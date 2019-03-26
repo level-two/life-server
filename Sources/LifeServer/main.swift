@@ -16,8 +16,10 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import LifeServerCore
 
-let lifeServer = LifeServer()
+// TODO: Make assembleInteractions internally called
+let lifeServer = LifeServerCore()
 let lifeServerInteractor = lifeServer.assembleInteractions()
 lifeServerInteractor.runServer("127.0.0.1", 1337)
 dispatchMain()

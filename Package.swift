@@ -21,6 +21,10 @@ import PackageDescription
 
 let package = Package(
     name: "LifeServer",
+    products: [
+        .library(name: "LifeServerCore", targets: ["LifeServerCore"]),
+        .executable(name: "LifeServer", targets: ["LifeServer"]),
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
         .package(url: "https://github.com/ReactiveX/RxSwift.git", "4.0.0" ..< "5.0.0"),
@@ -29,7 +33,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "LifeServer",
+            name: "LifeServerCore",
             dependencies: ["NIO",
                            "NIOFoundationCompat",
                            "RxSwift",
@@ -38,6 +42,9 @@ let package = Package(
                            "SwiftKueryPostgreSQL"]),
         .testTarget(
             name: "LifeServerTests",
-            dependencies: ["LifeServer"]),
+            dependencies: ["LifeServerCore"]),
+        .target(
+            name: "LifeServer",
+            dependencies: ["LifeServerCore"]),
     ]
 )

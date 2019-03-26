@@ -1,7 +1,7 @@
 import XCTest
 
-import tddTests
+import LifeServerCoreTests
 
 var tests = [XCTestCaseEntry]()
-tests += tddTests.allTests()
+tests += LifeServerCoreTests.allTests()
 XCTMain(tests)

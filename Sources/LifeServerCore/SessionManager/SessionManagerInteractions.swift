@@ -35,7 +35,7 @@ extension SessionManager {
 
     public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
         let interactor = Interactor()
-        
+        /*
         interactor.onMessage.bind { connectionId, message in
             guard case .login(let userName) = message else { return }
             
@@ -64,7 +64,7 @@ extension SessionManager {
                                                .logoutUserResponse(userData: nil, error: error.localizedDescription)))
             }
             }.disposed(by: disposeBag)
-
+         */
         interactor.loginStatusProvider = self
 
         return interactor
