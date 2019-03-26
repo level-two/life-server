@@ -2,12 +2,57 @@
   "object": {
     "pins": [
       {
+        "package": "CLibpq",
+        "repositoryURL": "https://github.com/IBM-Swift/CLibpq.git",
+        "state": {
+          "branch": null,
+          "revision": "20421e0c7890a2a9b1515eb1321ebcd76ad7231f",
+          "version": "0.1.2"
+        }
+      },
+      {
+        "package": "LoggerAPI",
+        "repositoryURL": "https://github.com/IBM-Swift/LoggerAPI.git",
+        "state": {
+          "branch": null,
+          "revision": "d0ccb4158b83f8692531892a9c894bb757593c6f",
+          "version": "1.8.0"
+        }
+      },
+      {
         "package": "RxSwift",
         "repositoryURL": "https://github.com/ReactiveX/RxSwift.git",
         "state": {
           "branch": null,
           "revision": "fc6030ea9fe9b8af0351fe195b4095a9f2339757",
           "version": "4.4.2"
+        }
+      },
+      {
+        "package": "SwiftKuery",
+        "repositoryURL": "https://github.com/IBM-Swift/Swift-Kuery.git",
+        "state": {
+          "branch": null,
+          "revision": "de890f1eb5e483961dcaf806467cb2770399efa1",
+          "version": "2.0.0"
+        }
+      },
+      {
+        "package": "SwiftKueryPostgreSQL",
+        "repositoryURL": "https://github.com/IBM-Swift/Swift-Kuery-PostgreSQL.git",
+        "state": {
+          "branch": null,
+          "revision": "3892fee6c51827298c7df3805a92e3120125e68d",
+          "version": "1.2.0"
+        }
+      },
+      {
+        "package": "SwiftKuerySQLite",
+        "repositoryURL": "https://github.com/IBM-Swift/Swift-Kuery-SQLite.git",
+        "state": {
+          "branch": null,
+          "revision": "a7cc824071cc7b48f8a18f3107d314c3c2905848",
+          "version": "1.1.0"
         }
       },
       {

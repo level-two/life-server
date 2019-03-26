@@ -34,17 +34,39 @@ extension SessionManager {
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
-        // internal interactions
-
-        // external interactions
-        let sessionManagerInteractor = Interactor()
-
-        sessionManagerInteractor.onMessage.bind { message in
-            print(message)
+        let interactor = Interactor()
+        
+        interactor.onMessage.bind { connectionId, message in
+            guard case .login(let userName) = message else { return }
+            
+            guard interactor.isUserExists(with: userName) else {
+                interactor.sendMessage.onNext((connectionId,
+                                               .loginUserResponse(userData: nil, error: SessionManagerError.userDoesntExist)))
+            }
+            
+            do {
+                try self.login(with: userName)
+                
+                interactor.sendMessage.onNext((connectionId, .loginUserResponse(userData: userData, error: nil)))
+            } catch {
+                interactor.sendMessage.onNext((connectionId,
+                                               .loginUserResponse(userData: nil, error: error.localizedDescription)))
+            }
         }.disposed(by: disposeBag)
+        
+        interactor.onMessage.bind { connectionId, message in
+            guard case .logout(let userName) = message else { return }
+            do {
+                let userId = try self.logout(with: userName)
+                interactor.sendMessage.onNext((connectionId, .logoutUserResponse(userData: userData, error: nil)))
+            } catch {
+                interactor.sendMessage.onNext((connectionId,
+                                               .logoutUserResponse(userData: nil, error: error.localizedDescription)))
+            }
+            }.disposed(by: disposeBag)
 
-        sessionManagerInteractor.loginStatusProvider = self
+        interactor.loginStatusProvider = self
 
-        return sessionManagerInteractor
+        return interactor
     }
 }

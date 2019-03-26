@@ -22,12 +22,22 @@ import PackageDescription
 let package = Package(
     name: "LifeServer",
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from:"1.0.0"),
-        .package(url: "https://github.com/ReactiveX/RxSwift.git", "4.0.0" ..< "5.0.0")
+        .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
+        .package(url: "https://github.com/ReactiveX/RxSwift.git", "4.0.0" ..< "5.0.0"),
+        .package(url: "https://github.com/IBM-Swift/Swift-Kuery-SQLite.git", from: "1.0.0"),
+        .package(url: "https://github.com/IBM-Swift/Swift-Kuery-PostgreSQL.git", from: "1.0.0")
     ],
     targets: [
         .target(
             name: "LifeServer",
-            dependencies: ["NIO", "NIOFoundationCompat", "RxSwift", "RxCocoa"])
+            dependencies: ["NIO",
+                           "NIOFoundationCompat",
+                           "RxSwift",
+                           "RxCocoa",
+                           "SwiftKuerySQLite",
+                           "SwiftKueryPostgreSQL"]),
+        .testTarget(
+            name: "LifeServerTests",
+            dependencies: ["LifeServer"]),
     ]
 )

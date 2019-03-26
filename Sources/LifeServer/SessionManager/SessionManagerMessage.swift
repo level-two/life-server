@@ -18,20 +18,22 @@
 import Foundation
 
 enum SessionManagerMessage: Codable {
-    case createUser(user: UserData)
     case login(userName: String)
     case logout(userName: String)
+    case loginResponse(userData: UserData?, error: String?)
+    case logoutResponse(userData: UserData?, error: String?)
 }
 
 extension SessionManagerMessage {
     private enum CodingKeys: String, CodingKey {
-        case createUser
         case login
         case logout
+        case loginResponse
+        case logoutResponse
     }
 
     private enum AuxCodingKeys: String, CodingKey {
-        case user
+        case userData
         case error
     }
 
@@ -43,9 +45,10 @@ extension SessionManagerMessage {
             return try container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: key).decode(T.self, forKey: auxKey)
         }
         switch key {
-        case .login:              self = try .login(userName: dec())
-        case .logout:             self = try .logout(userName: dec())
-        case .createUser:         self = try .createUser(user: dec())
+        case .login: self = try .login(userName: dec())
+        case .logout: self = try .logout(userName: dec())
+        case .loginResponse: self = try .loginResponse(userData: dec(.userData), error: dec(.error))
+        case .logoutResponse: self = try .logoutResponse(userData: dec(.userData), error: dec(.error))
         }
     }
 
@@ -57,8 +60,14 @@ extension SessionManagerMessage {
             try container.encode(userName, forKey: .login)
         case .logout(let userName):
             try container.encode(userName, forKey: .logout)
-        case .createUser(let user):
-            try container.encode(user, forKey: .createUser)
+        case .loginResponse(let userData, let error):
+            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .loginResponse)
+            try nestedContainter.encode(userData, forKey: .userData)
+            try nestedContainter.encode(error, forKey: .error)
+        case .logoutResponse(let userData, let error):
+            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .logoutResponse)
+            try nestedContainter.encode(userData, forKey: .userData)
+            try nestedContainter.encode(error, forKey: .error)
         }
     }
 }

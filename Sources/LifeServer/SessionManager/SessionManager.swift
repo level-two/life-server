@@ -49,18 +49,8 @@ class SessionManager: LoginStatusProvider {
     func loginStatus(for userId: UserId) -> Bool {
         return false
     }
-
+    
     /*
-    public let messageEvent = Event3<Int, Int, [String:Any]>()
-    public let userLoginEvent = Event<Int>()
-    public let userLogoutEvent = Event<Int>()
-    
-    private weak var server: Server?
-    private weak var usersManager: UsersManager?
-    private var userIdForConnectionId = [Int:Int]()
-    private let kNoUserId = -1
-    let threadSafe = ThreadSafeHelper(withQueueName: "com.yauheni-lychkouski.life-server.sessionManagerLockQueue")
-    
     // MARK: Public methods
     init(withServer server:Server, usersManager:UsersManager) {
         self.server = server
