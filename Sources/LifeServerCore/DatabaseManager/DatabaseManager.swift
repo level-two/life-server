@@ -21,23 +21,25 @@ import SwiftKuerySQLite
 
 class DatabaseManager {
     init() {
-        guard let databaseUrl = URL.applicationSupportDirectory?.appendingPathComponent("database.db")
-            else { fatalError("Failed to get database path") }
+        guard let databaseUrl = URL.applicationSupportDirectory?.appendingPathComponent("database.db") else {
+            fatalError("Failed to get database path")
+        }
         
-        self.connection = SQLiteConnection(filename: databaseUrl.absoluteString)
+        let needInitDb = !FileManager.default.fileExists(atPath: databaseUrl.path)
+        self.connection = SQLiteConnection(filename: databaseUrl.path)
+        
         connection.connect() { error in
             guard let error = error else { return }
             fatalError("Failed to connect to database: \(error.localizedDescription)")
         }
+        
+        if needInitDb {
+            createUsersTable()
+            createChatTable()
+        }
     }
     
     let connection: SQLiteConnection
-}
-
-extension DatabaseManager {
-    func createUsersTable() {
-        //CREATE TABLE USERS(userId integer PRIMARY KEY, userName text, color integer);
-    }
 }
 
 extension DatabaseManager: UserDatabase {
@@ -54,37 +56,57 @@ extension DatabaseManager: UserDatabase {
         let color = Column("color", Int32.self)
     }
     
-    public func containsUser(with userId: UserId) -> Future<Void> {
-        
+    func createUsersTable() {
+        let createTableQuery = "CREATE TABLE USERS(userId integer PRIMARY KEY, userName text, color integer)"
+        connection.execute(createTableQuery) { queryResult in
+            if let error = queryResult.asError {
+                fatalError("Failed to create USERS table: \(error)")
+            }
+        }
+    }
+    
+    public func containsUser(with userId: UserId) -> Future<Bool> {
+        let usersSchema = Users()
+        let userQuery = Select(usersSchema.userId, from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
+        let parameters = ["userIdParam": userId] as [String: Any?]
+        let promise = Promise<Bool>()
+        connection.execute(query: userQuery, parameters: parameters) { queryResult in
+            promise.resolve(with: queryResult.asRows?.first != nil)
+        }
+        return promise
     }
 
     @discardableResult
     public func store(userData: UserData) -> Future<Void> {
-        
+        let usersSchema = Users()
+        let insertQuery = Insert(into: usersSchema, values: [userData.userId, userData.userName, userData.color.toInt32])
+        let promise = Promise<Void>()
+        connection.execute(query: insertQuery) { queryResult in
+            if case .error(let err) = queryResult {
+                promise.reject(with: err)
+            } else {
+                promise.resolve(with: ())
+            }
+        }
+        return promise
     }
-    
 
     public func userData(with userId: UserId) -> Future<UserData> {
-        // SELECT * FROM USERS WHERE USERS.userId like 3;
         let usersSchema = Users()
         let userQuery = Select(from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
-        let parameters: [String: Any?] = ["userIdParam": userId]
-        
+        let parameters = ["userIdParam": userId] as [String: Any?]
         let promise = Promise<UserData>()
-        
         connection.execute(query: userQuery, parameters: parameters) { queryResult in
             guard let row = queryResult.asRows?.first else {
                 return promise.reject(with: "No such user for given id: \(userId)")
             }
-            
             guard
                 let userName = row["userName"] as? String,
                 let intColor = row["color"] as? Int32
-            else { fatalError("Database error") }
-            
+            else { fatalError("Database error. Failed to get row values") }
+
             promise.resolve(with: UserData(userName: userName, userId: userId, color: .init(from: intColor)))
         }
-        
         return promise
     }
 }
@@ -93,21 +115,22 @@ extension DatabaseManager: ChatDatabase {
     func createChatTable() {
         //CREATE TABLE CHAT(messageId integer PRIMARY KEY, userId integer, userName text, message text);
     }
-    
     // SELECT * FROM CHAT WHERE CHAT.messageId between 4 and 5;
 }
 
-
-
 extension Color {
     public init(from intColor: Int32) {
-        alpha = CGFloat( ((intColor >> 24) & 0xff) / 256)
-        red = CGFloat( ((intColor >> 16) & 0xff) / 256)
-        green = CGFloat( ((intColor >> 8) & 0xff) / 256)
-        blue = CGFloat( ((intColor >> 0) & 0xff) / 256)
+        alpha = CGFloat((intColor >> 24) & 0xff) / 0xff
+        red = CGFloat((intColor >> 16) & 0xff) / 0xff
+        green = CGFloat((intColor >> 8) & 0xff) / 0xff
+        blue = CGFloat((intColor >> 0) & 0xff) / 0xff
     }
     
-    public func toInt32() -> Int32 {
-        return ((alpha * 256) << 24) | ((red * 256) << 16) | ((green * 256) << 8) | ((blue * 256) << 0)
+    public var toInt32: Int32 {
+        func comp(_ val: CGFloat, _ idx: Int) -> Int32 {
+            return Int32(val * 255) << (idx * 8)
+        }
+
+        return comp(alpha, 3) + comp(red, 2) + comp(green, 1) + comp(blue, 0)
     }
 }

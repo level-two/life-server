@@ -20,11 +20,10 @@ import RxSwift
 import RxCocoa
 
 protocol UserDatabase: class {
-    func containsUser(with userId: UserId) -> Future<Void>
+    func containsUser(with userId: UserId) -> Future<Bool>
     func store(userData: UserData) -> Future<Void>
     func userData(with userId: UserId) -> Future<UserData>
 }
-
 
 protocol ChatDatabase: class {
 }

@@ -21,7 +21,7 @@ public typealias UserId = Int
 
 public struct UserData: Codable {
     var userName: String
-    var userId: UserId?
+    var userId: UserId
     var color: Color
 }
 
