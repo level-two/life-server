@@ -18,6 +18,8 @@
 import Foundation
 import RxSwift
 import RxCocoa
+import SwiftKuery
+import SwiftKuerySQLite
 
 public enum UsersManagerError: Error {
     case userAlreadyExists

@@ -18,7 +18,7 @@
 import Foundation
 
 extension URL {
-    static var applicationSupportDirectory: URL? {
+    public static var applicationSupportDirectory: URL? {
         #if os(Linux)
         let url = URL(fileURLWithPath: "/var/lib")
         #elseif os(macOS)

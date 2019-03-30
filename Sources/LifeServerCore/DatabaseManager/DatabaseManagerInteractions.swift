@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-//    Copyright (C) 2018 Yauheni Lychkouski.
+//    Copyright (C) 2019 Yauheni Lychkouski.
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -16,29 +16,31 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
-import NIO
 import RxSwift
 import RxCocoa
 
-final class BridgeChannelHandler: ChannelInboundHandler {
-    public typealias InboundIn = Data
+protocol UserDatabase: class {
+    func containsUser(with userId: UserId) -> Future<Void>
+    func store(userData: UserData) -> Future<Void>
+    func userData(with userId: UserId) -> Future<UserData>
+}
 
-    public let onMessage = PublishSubject<Data>()
-    public let disposeBag = DisposeBag()
 
-    deinit {
-        print("[DEBUG!!] 🔥 BridgeChannelHandler deinit!")
+protocol ChatDatabase: class {
+}
+
+extension DatabaseManager {
+    public class Interactor {
+        fileprivate(set) weak var userDatabase: UserDatabase?
+        fileprivate(set) weak var chatDatabase: ChatDatabase?
     }
-
-    public func channelRead(ctx: ChannelHandlerContext, messageIn: NIOAny) {
-        let data = self.unwrapInboundIn(messageIn)
-        // Think about json validation before using it
-        // we could have also sanitized the user input by using a regular expression in our route path to make sure that the incoming value was a single letter
-        onMessage.onNext(data)
-    }
-
-    public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
-        print("Bridge caught error: ", error)
-        ctx.close(promise: nil)
+    
+    public func assembleInteractions(disposeBag: DisposeBag) -> Interactor {
+        let interactor = Interactor()
+        
+        interactor.userDatabase = self
+        interactor.chatDatabase = self
+        
+        return interactor
     }
 }

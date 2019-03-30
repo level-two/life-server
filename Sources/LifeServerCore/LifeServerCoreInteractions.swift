@@ -32,6 +32,8 @@ extension LifeServerCore {
         let chatInteractor = chat.assembleInteractions(disposeBag: disposeBag)
 
         serverInteractor.onMessage.bind { connectionId, data in
+            // TODO: Think about json or incoming message validation before using it
+            
             if let sessionManagerMessage = try? JSONDecoder().decode(SessionManagerMessage.self, from: data) {
                 sessionManagerInteractor.onMessage.onNext((connectionId, sessionManagerMessage))
                 return

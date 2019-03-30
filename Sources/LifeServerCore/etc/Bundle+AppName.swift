@@ -20,7 +20,7 @@ import Foundation
 extension Bundle {
     static var appName: String {
         guard let dic = Bundle.main.infoDictionary else { fatalError("Couldn't get Bundle.main.infoDictionary") }
-        guard let name = dic["CFBundleName"] as? String else { fatalError("Couldn't get CFBundleName") }
+        guard let name = dic["CFBundleDsiplayName"] as? String else { fatalError("Couldn't get CFBundleDsiplayName") }
         return name
     }
 }
