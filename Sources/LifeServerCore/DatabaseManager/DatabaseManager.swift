@@ -20,20 +20,13 @@ import SwiftKuery
 import SwiftKuerySQLite
 
 class DatabaseManager {
-    init() {
-        guard let databaseUrl = URL.applicationSupportDirectory?.appendingPathComponent("database.db") else {
-            fatalError("Failed to get database path")
-        }
-        
+    init(with databaseUrl: URL = URL.applicationSupportDirectory.appendingPathComponent("LifeServer/database.db")) {
         let needInitDb = !FileManager.default.fileExists(atPath: databaseUrl.path)
+        
         self.connection = SQLiteConnection(filename: databaseUrl.path)
-        
         connection.connect() { error in
-            guard let error = error else { return }
-            fatalError("Failed to connect to database: \(error.localizedDescription)")
-        }
-        
-        if needInitDb {
+            guard error == nil else { fatalError("Failed to connect to database: \(error!.localizedDescription)") }
+            guard needInitDb else { return }
             createUsersTable()
             createChatTable()
         }
@@ -102,10 +95,11 @@ extension DatabaseManager: UserDatabase {
             }
             guard
                 let userName = row["userName"] as? String,
-                let intColor = row["color"] as? Int32
+                let colorInt32 = row["color"] as? Int32
             else { fatalError("Database error. Failed to get row values") }
 
-            promise.resolve(with: UserData(userName: userName, userId: userId, color: .init(from: intColor)))
+            let color = Color(from: UInt32(bitPattern: colorInt32))
+            promise.resolve(with: UserData(userName: userName, userId: userId, color: color))
         }
         return promise
     }
@@ -119,18 +113,18 @@ extension DatabaseManager: ChatDatabase {
 }
 
 extension Color {
-    public init(from intColor: Int32) {
-        alpha = CGFloat((intColor >> 24) & 0xff) / 0xff
-        red = CGFloat((intColor >> 16) & 0xff) / 0xff
-        green = CGFloat((intColor >> 8) & 0xff) / 0xff
-        blue = CGFloat((intColor >> 0) & 0xff) / 0xff
+    public init(from val: UInt32) {
+        alpha = CGFloat((val >> 24) & 0xff) / 0xff
+        red = CGFloat((val >> 16) & 0xff) / 0xff
+        green = CGFloat((val >> 8) & 0xff) / 0xff
+        blue = CGFloat((val >> 0) & 0xff) / 0xff
     }
     
     public var toInt32: Int32 {
-        func comp(_ val: CGFloat, _ idx: Int) -> Int32 {
-            return Int32(val * 255) << (idx * 8)
+        func comp(_ val: CGFloat, _ idx: UInt32) -> UInt32 {
+            return UInt32(val * 255) << (idx * 8)
         }
-
-        return comp(alpha, 3) + comp(red, 2) + comp(green, 1) + comp(blue, 0)
+        
+        return Int32(bitPattern: comp(alpha, 3) + comp(red, 2) + comp(green, 1) + comp(blue, 0))
     }
 }

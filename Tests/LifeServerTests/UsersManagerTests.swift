@@ -15,15 +15,16 @@
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
-import Foundation
+import XCTest
+@testable import LifeServerCore
 
-extension URL {
-    public static var applicationSupportDirectory: URL {
-        #if os(Linux)
-        let url = URL(fileURLWithPath: "/var/lib")
-        #elseif os(macOS)
-        let url = try! FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        #endif
-        return url
+final class UsersManagerTests: XCTestCase {
+    func testUsersManagerInit() {
+        var usersManager: UsersManager? = nil
+        XCTAssertNoThrow(usersManager = try UsersManager())
     }
+    
+    static var allTests = [
+        ("testUsersManagerInit", testUsersManagerInit),
+    ]
 }

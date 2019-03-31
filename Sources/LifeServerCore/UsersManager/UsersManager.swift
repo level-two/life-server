@@ -30,9 +30,8 @@ public class UsersManager {
         lastUserId = 0
         registeredUsers = []
 
-        guard let usersFileUrl = URL.applicationDocumentsDirectory?.appendingPathComponent("RegisteredUsers.json")
-            else { throw "Failed to get url to RegisteredUsers.json" }
-
+        let usersFileUrl = URL.applicationDocumentsDirectory.appendingPathComponent("RegisteredUsers.json")
+        
         if FileManager.default.fileExists(atPath: usersFileUrl.path) == false {
             let result = FileManager.default.createFile(atPath: usersFileUrl.path,
                                            contents: "[\n]".data(using: .utf8)!,

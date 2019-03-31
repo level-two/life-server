@@ -24,6 +24,7 @@
 		93148E46224FDB6C003444A9 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93148E40224F7809003444A9 /* DatabaseManager.swift */; };
 		93148E47224FDB6C003444A9 /* DatabaseManagerInteractions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93148E42224F7831003444A9 /* DatabaseManagerInteractions.swift */; };
 		93148E48224FDCEC003444A9 /* Promises.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93148E44224F96D8003444A9 /* Promises.swift */; };
+		93F39F832250C53500F9E524 /* DatabaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F39F822250C53400F9E524 /* DatabaseManagerTests.swift */; };
 		OBJ_1001 /* _RXKVOObserver.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_398 /* _RXKVOObserver.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_1002 /* _RXObjCRuntime.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_399 /* _RXObjCRuntime.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_1003 /* _RXDelegateProxy.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_400 /* _RXDelegateProxy.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -327,7 +328,7 @@
 		OBJ_671 /* CNIODarwin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "swift-nio::CNIODarwin::Product" /* CNIODarwin.framework */; };
 		OBJ_672 /* CNIOLinux.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "swift-nio::CNIOLinux::Product" /* CNIOLinux.framework */; };
 		OBJ_695 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_6 /* Package.swift */; };
-		OBJ_706 /* LifeServerCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_44 /* LifeServerCoreTests.swift */; };
+		OBJ_706 /* UsersManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_44 /* UsersManagerTests.swift */; };
 		OBJ_707 /* XCTestManifests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_45 /* XCTestManifests.swift */; };
 		OBJ_709 /* LifeServerCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "LifeServer::LifeServerCore::Product" /* LifeServerCore.framework */; };
 		OBJ_710 /* SwiftKueryPostgreSQL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "SwiftKueryPostgreSQL::SwiftKueryPostgreSQL::Product" /* SwiftKueryPostgreSQL.framework */; };
@@ -1118,10 +1119,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		93148E37224EB8F1003444A9 /* info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = info.plist; sourceTree = "<group>"; };
 		93148E40224F7809003444A9 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		93148E42224F7831003444A9 /* DatabaseManagerInteractions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerInteractions.swift; sourceTree = "<group>"; };
 		93148E44224F96D8003444A9 /* Promises.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promises.swift; sourceTree = "<group>"; };
+		93F39F822250C53400F9E524 /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
 		"LifeServer::LifeServer::Product" /* LifeServer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = LifeServer; sourceTree = BUILT_PRODUCTS_DIR; };
 		"LifeServer::LifeServerCore::Product" /* LifeServerCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = LifeServerCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		"LifeServer::LifeServerTests::Product" /* LifeServerTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = LifeServerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1466,7 +1467,7 @@
 		OBJ_437 /* ChannelHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelHandler.swift; sourceTree = "<group>"; };
 		OBJ_438 /* ChannelHandlers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelHandlers.swift; sourceTree = "<group>"; };
 		OBJ_439 /* ChannelInvoker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelInvoker.swift; sourceTree = "<group>"; };
-		OBJ_44 /* LifeServerCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeServerCoreTests.swift; sourceTree = "<group>"; };
+		OBJ_44 /* UsersManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsersManagerTests.swift; sourceTree = "<group>"; };
 		OBJ_440 /* ChannelOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelOption.swift; sourceTree = "<group>"; };
 		OBJ_441 /* ChannelPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelPipeline.swift; sourceTree = "<group>"; };
 		OBJ_442 /* CircularBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularBuffer.swift; sourceTree = "<group>"; };
@@ -2472,7 +2473,8 @@
 		OBJ_43 /* LifeServerTests */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_44 /* LifeServerCoreTests.swift */,
+				OBJ_44 /* UsersManagerTests.swift */,
+				93F39F822250C53400F9E524 /* DatabaseManagerTests.swift */,
 				OBJ_45 /* XCTestManifests.swift */,
 			);
 			name = LifeServerTests;
@@ -2625,7 +2627,7 @@
 			path = include;
 			sourceTree = "<group>";
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
@@ -2634,7 +2636,6 @@
 				OBJ_46 /* Dependencies */,
 				OBJ_503 /* Products */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_501 /* NIOMulticastChat */ = {
@@ -2792,7 +2793,6 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_9 /* main.swift */,
-				93148E37224EB8F1003444A9 /* info.plist */,
 			);
 			name = LifeServer;
 			path = Sources/LifeServer;
@@ -2865,7 +2865,6 @@
 				OBJ_574 /* Sources */,
 				OBJ_576 /* Frameworks */,
 				93148E3A224EBD8F003444A9 /* CopyFiles */,
-				93148E39224EBC65003444A9 /* Set build number to git revisions count */,
 			);
 			buildRules = (
 			);
@@ -3378,7 +3377,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_503 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -3414,28 +3413,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		93148E39224EBC65003444A9 /* Set build number to git revisions count */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 12;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}",
-			);
-			name = "Set build number to git revisions count";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Use Xcode's copy of the Git binary\n#GIT=`xcrun -find git`\n#GIT=`git`\necho --------------===============----------------\necho ${INFOPLIST_PATH}\n\n# Use the commit count as CFBundleVersion\nGIT_COMMIT_COUNT=`git rev-list --count HEAD`\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion ${GIT_COMMIT_COUNT}\" \"${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}\"\n\n## Use the last annotated tag as CFBundleShortVersionString\nGIT_TAG=`git describe --tags --always --dirty`\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString ${GIT_TAG}\" \"${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}\"\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		OBJ_1014 /* Sources */ = {
@@ -3812,8 +3789,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_706 /* LifeServerCoreTests.swift in Sources */,
+				OBJ_706 /* UsersManagerTests.swift in Sources */,
 				OBJ_707 /* XCTestManifests.swift in Sources */,
+				93F39F832250C53500F9E524 /* DatabaseManagerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
