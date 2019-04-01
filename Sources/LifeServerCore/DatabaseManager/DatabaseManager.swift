@@ -32,6 +32,10 @@ class DatabaseManager {
         }
     }
     
+    deinit {
+        connection.closeConnection()
+    }
+    
     let connection: SQLiteConnection
 }
 
@@ -133,6 +137,22 @@ extension DatabaseManager: UserDatabase {
             
             let color = Color(from: UInt32(bitPattern: colorInt32))
             promise.resolve(with: UserData(userName: userName, userId: UserId(userId32), color: color))
+        }
+        return promise
+    }
+    
+    public func numberOfRegisteredUsers() -> Future<Int> {
+        let promise = Promise<Int>()
+        let countQuery = "SELECT COUNT(userId) FROM USERS"
+        connection.execute(countQuery) { queryResult in
+            guard
+                let row = queryResult.asRows?.first,
+                let count = row.first?.value as? Int32
+                else {
+                    fatalError("Failed to get number of registered users")
+                }
+            
+             promise.resolve(with: Int(count))
         }
         return promise
     }

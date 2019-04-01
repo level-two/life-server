@@ -27,11 +27,14 @@ final class DatabaseManagerTests: XCTestCase {
     let disposeBag = DisposeBag()
     
     override func setUp() {
-        if FileManager.default.fileExists(atPath: DatabaseManagerTests.databaseUrl.path) {
-            try! FileManager.default.removeItem(at: DatabaseManagerTests.databaseUrl)
-        }
         databaseManager = DatabaseManager(with: DatabaseManagerTests.databaseUrl)
         interactor = databaseManager.assembleInteractions(disposeBag: disposeBag)
+    }
+    
+    override func tearDown() {
+        interactor = nil
+        databaseManager = nil
+        try! FileManager.default.removeItem(at: DatabaseManagerTests.databaseUrl)
     }
     
     func testInitialization() {
@@ -192,11 +195,52 @@ final class DatabaseManagerTests: XCTestCase {
         }
     }
     
+    func testUsersCount() {
+        let userData1 = UserData(userName: "userName1", userId: 1, color: .init(from: 0xdeadbeef))
+        let userData2 = UserData(userName: "userName2", userId: 2, color: .init(from: 0x12345678))
+        
+        interactor.userDatabase?.numberOfRegisteredUsers().observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let count): XCTAssertEqual(count, 0)
+            }
+        }
+        
+        interactor.userDatabase?.store(userData: userData1).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(_): ()
+            }
+        }
+        
+        interactor.userDatabase?.numberOfRegisteredUsers().observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let count): XCTAssertEqual(count, 1)
+            }
+        }
+        
+        interactor.userDatabase?.store(userData: userData2).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(_): ()
+            }
+        }
+        
+        interactor.userDatabase?.numberOfRegisteredUsers().observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let count): XCTAssertEqual(count, 2)
+            }
+        }
+    }
+    
     static var allTests = [
         ("testInitialization", testInitialization),
         ("testCreateUser", testCreateUser),
         ("testStoreWithExistingUsername", testStoreWithExistingUsername),
         ("testStoreWithExistingUserId", testStoreWithExistingUserId),
+        ("testUsersCount", testUsersCount),
         ]
 }
 

@@ -25,6 +25,7 @@ protocol UserDatabase: class {
     func store(userData: UserData) -> Future<Void>
     func userData(with userId: UserId) -> Future<UserData>
     func userData(with userName: String) -> Future<UserData>
+    func numberOfRegisteredUsers() -> Future<Int>
 }
 
 protocol ChatDatabase: class {
