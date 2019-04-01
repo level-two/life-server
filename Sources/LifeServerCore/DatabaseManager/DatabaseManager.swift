@@ -45,12 +45,12 @@ extension DatabaseManager: UserDatabase {
         
         let tableName = "Users"
         let userId = Column("userId", Int32.self, primaryKey: true, unique: true)
-        let userName = Column("userName", String.self)
+        let userName = Column("userName", String.self, unique: true)
         let color = Column("color", Int32.self)
     }
     
     func createUsersTable() {
-        let createTableQuery = "CREATE TABLE USERS(userId integer PRIMARY KEY, userName text, color integer)"
+        let createTableQuery = "CREATE TABLE USERS(userId integer PRIMARY KEY, userName text UNIQUE, color integer)"
         connection.execute(createTableQuery) { queryResult in
             if let error = queryResult.asError {
                 fatalError("Failed to create USERS table: \(error)")
@@ -62,6 +62,17 @@ extension DatabaseManager: UserDatabase {
         let usersSchema = Users()
         let userQuery = Select(usersSchema.userId, from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
         let parameters = ["userIdParam": userId] as [String: Any?]
+        let promise = Promise<Bool>()
+        connection.execute(query: userQuery, parameters: parameters) { queryResult in
+            promise.resolve(with: queryResult.asRows?.first != nil)
+        }
+        return promise
+    }
+    
+    public func containsUser(with userName: String) -> Future<Bool> {
+        let usersSchema = Users()
+        let userQuery = Select(usersSchema.userName, from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
+        let parameters = ["userNameParam": userName] as [String: Any?]
         let promise = Promise<Bool>()
         connection.execute(query: userQuery, parameters: parameters) { queryResult in
             promise.resolve(with: queryResult.asRows?.first != nil)
@@ -93,13 +104,35 @@ extension DatabaseManager: UserDatabase {
             guard let row = queryResult.asRows?.first else {
                 return promise.reject(with: "No such user for given id: \(userId)")
             }
+            
             guard
                 let userName = row["userName"] as? String,
                 let colorInt32 = row["color"] as? Int32
-            else { fatalError("Database error. Failed to get row values") }
-
+                else { fatalError("Database error. Failed to get row values") }
+            
             let color = Color(from: UInt32(bitPattern: colorInt32))
             promise.resolve(with: UserData(userName: userName, userId: userId, color: color))
+        }
+        return promise
+    }
+    
+    public func userData(with userName: String) -> Future<UserData> {
+        let usersSchema = Users()
+        let userQuery = Select(from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
+        let parameters = ["userNameParam": userName] as [String: Any?]
+        let promise = Promise<UserData>()
+        connection.execute(query: userQuery, parameters: parameters) { queryResult in
+            guard let row = queryResult.asRows?.first else {
+                return promise.reject(with: "No such user with given name: \(userName)")
+            }
+            
+            guard
+                let userId32 = row["userId"] as? Int32,
+                let colorInt32 = row["color"] as? Int32
+                else { fatalError("Database error. Failed to get row values") }
+            
+            let color = Color(from: UInt32(bitPattern: colorInt32))
+            promise.resolve(with: UserData(userName: userName, userId: UserId(userId32), color: color))
         }
         return promise
     }

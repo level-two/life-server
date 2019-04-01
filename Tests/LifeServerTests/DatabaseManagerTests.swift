@@ -22,23 +22,26 @@ import RxCocoa
 
 final class DatabaseManagerTests: XCTestCase {
     static let databaseUrl = URL.applicationSupportDirectory.appendingPathComponent("LifeServer/testdatabase.db")
+    var databaseManager: DatabaseManager!
+    var interactor: DatabaseManager.Interactor!
+    let disposeBag = DisposeBag()
     
-    func testInitialization() {
+    override func setUp() {
         if FileManager.default.fileExists(atPath: DatabaseManagerTests.databaseUrl.path) {
             try! FileManager.default.removeItem(at: DatabaseManagerTests.databaseUrl)
         }
-        let _ = DatabaseManager(with: DatabaseManagerTests.databaseUrl)
+        databaseManager = DatabaseManager(with: DatabaseManagerTests.databaseUrl)
+        interactor = databaseManager.assembleInteractions(disposeBag: disposeBag)
+    }
+    
+    func testInitialization() {
         XCTAssertTrue(FileManager.default.fileExists(atPath: DatabaseManagerTests.databaseUrl.path))
     }
     
     func testCreateUser() {
-        let userId = 123
+        let userId = 1
         let userData = UserData(userName: "Test", userId: userId, color: .init(from: 0xaabbccdd))
-        
-        let disposeBag = DisposeBag()
-        let databaseManager = DatabaseManager(with: DatabaseManagerTests.databaseUrl)
-        let interactor = databaseManager.assembleInteractions(disposeBag: disposeBag)
-        
+
         interactor.userDatabase?.store(userData: userData).observe { result in
             switch result {
             case .error(_): XCTFail()
@@ -61,26 +64,102 @@ final class DatabaseManagerTests: XCTestCase {
         }
     }
     
-    func testStoreWithSameUserId() {
-        let userId = 678
-        let userData1 = UserData(userName: "user1", userId: userId, color: .init(from: 0xdeadbeef))
-        let userData2 = UserData(userName: "user2", userId: userId, color: .init(from: 0x12345678))
-        
-        let disposeBag = DisposeBag()
-        let databaseManager = DatabaseManager(with: DatabaseManagerTests.databaseUrl)
-        let interactor = databaseManager.assembleInteractions(disposeBag: disposeBag)
+    func testStoreWithExistingUsername() {
+        let userName = "duplicating"
+        let userId1 = 2
+        let userId2 = 3
+        let userData1 = UserData(userName: userName, userId: userId1, color: .init(from: 0xdeadbeef))
+        let userData2 = UserData(userName: userName, userId: userId2, color: .init(from: 0x12345678))
         
         interactor.userDatabase?.store(userData: userData1).observe { result in
             switch result {
             case .error(_): XCTFail()
-            case .value(): ()
+            case .value(_): ()
             }
         }
         
         interactor.userDatabase?.store(userData: userData2).observe { result in
             switch result {
             case .error(_): ()
-            case .value(): XCTFail()
+            case .value(_): XCTFail()
+            }
+        }
+        
+        interactor.userDatabase?.containsUser(with: userName).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let success): XCTAssertTrue(success)
+            }
+        }
+        
+        interactor.userDatabase?.containsUser(with: userId1).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let success): XCTAssertTrue(success)
+            }
+        }
+        
+        interactor.userDatabase?.containsUser(with: userId2).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let success): XCTAssertFalse(success)
+            }
+        }
+        
+        interactor.userDatabase?.userData(with: userName).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let data): XCTAssertEqual(data, userData1)
+            }
+        }
+        
+        interactor.userDatabase?.userData(with: userId1).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let data): XCTAssertEqual(data, userData1)
+            }
+        }
+        
+        interactor.userDatabase?.userData(with: userId2).observe { result in
+            switch result {
+            case .error(_): ()
+            case .value(_): XCTFail()
+            }
+        }
+    }
+    
+    func testStoreWithExistingUserId() {
+        let userId = 4
+        let userName1 = "userName1"
+        let userName2 = "userName2"
+        let userData1 = UserData(userName: userName1, userId: userId, color: .init(from: 0xdeadbeef))
+        let userData2 = UserData(userName: userName2, userId: userId, color: .init(from: 0x12345678))
+        
+        interactor.userDatabase?.store(userData: userData1).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(_): ()
+            }
+        }
+        
+        interactor.userDatabase?.store(userData: userData2).observe { result in
+            switch result {
+            case .error(_): ()
+            case .value(_): XCTFail()
+            }
+        }
+        
+        interactor.userDatabase?.containsUser(with: userName1).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let success): XCTAssertTrue(success)
+            }
+        }
+        
+        interactor.userDatabase?.containsUser(with: userName2).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let success): XCTAssertFalse(success)
             }
         }
         
@@ -97,12 +176,27 @@ final class DatabaseManagerTests: XCTestCase {
             case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
+        
+        interactor.userDatabase?.userData(with: userName1).observe { result in
+            switch result {
+            case .error(_): XCTFail()
+            case .value(let data): XCTAssertEqual(data, userData1)
+            }
+        }
+        
+        interactor.userDatabase?.userData(with: userName2).observe { result in
+            switch result {
+            case .error(_): ()
+            case .value(_): XCTFail()
+            }
+        }
     }
     
     static var allTests = [
         ("testInitialization", testInitialization),
         ("testCreateUser", testCreateUser),
-        ("testStoreWithSameUserId", testStoreWithSameUserId),
+        ("testStoreWithExistingUsername", testStoreWithExistingUsername),
+        ("testStoreWithExistingUserId", testStoreWithExistingUserId),
         ]
 }
 

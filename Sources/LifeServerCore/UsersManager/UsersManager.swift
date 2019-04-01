@@ -30,7 +30,7 @@ public class UsersManager {
         lastUserId = 0
         registeredUsers = []
 
-        let usersFileUrl = URL.applicationDocumentsDirectory.appendingPathComponent("RegisteredUsers.json")
+        let usersFileUrl = URL.applicationSupportDirectory.appendingPathComponent("LifeServer/RegisteredUsers.json")
         
         if FileManager.default.fileExists(atPath: usersFileUrl.path) == false {
             let result = FileManager.default.createFile(atPath: usersFileUrl.path,
