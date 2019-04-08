@@ -22,7 +22,7 @@ import RxCocoa
 protocol UserDatabase: class {
     func containsUser(with userId: UserId) -> Future<Bool>
     func containsUser(with userName: String) -> Future<Bool>
-    func store(userData: UserData) -> Future<Void>
+    func store(userData: UserData) -> Future<UserData>
     func userData(with userId: UserId) -> Future<UserData>
     func userData(with userName: String) -> Future<UserData>
     func numberOfRegisteredUsers() -> Future<Int>

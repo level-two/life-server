@@ -20,8 +20,7 @@ import XCTest
 
 final class UsersManagerTests: XCTestCase {
     func testUsersManagerInit() {
-        var usersManager: UsersManager? = nil
-        XCTAssertNoThrow(usersManager = try UsersManager())
+        _ = UsersManager()
     }
     
     static var allTests = [

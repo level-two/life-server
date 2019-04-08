@@ -48,7 +48,7 @@ final class DatabaseManagerTests: XCTestCase {
         interactor.userDatabase?.store(userData: userData).observe { result in
             switch result {
             case .error(_): XCTFail()
-            case .value(): ()
+            case .value(let data): XCTAssertEqual(data, userData)
             }
         }
         
@@ -77,7 +77,7 @@ final class DatabaseManagerTests: XCTestCase {
         interactor.userDatabase?.store(userData: userData1).observe { result in
             switch result {
             case .error(_): XCTFail()
-            case .value(_): ()
+            case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
@@ -141,7 +141,7 @@ final class DatabaseManagerTests: XCTestCase {
         interactor.userDatabase?.store(userData: userData1).observe { result in
             switch result {
             case .error(_): XCTFail()
-            case .value(_): ()
+            case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
@@ -209,7 +209,7 @@ final class DatabaseManagerTests: XCTestCase {
         interactor.userDatabase?.store(userData: userData1).observe { result in
             switch result {
             case .error(_): XCTFail()
-            case .value(_): ()
+            case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
@@ -223,7 +223,7 @@ final class DatabaseManagerTests: XCTestCase {
         interactor.userDatabase?.store(userData: userData2).observe { result in
             switch result {
             case .error(_): XCTFail()
-            case .value(_): ()
+            case .value(let data): XCTAssertEqual(data, userData2)
             }
         }
         

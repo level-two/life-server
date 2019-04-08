@@ -20,8 +20,8 @@ import Foundation
 public typealias UserId = Int
 
 public struct UserData: Codable {
-    var userName: String
     var userId: UserId
+    var userName: String
     var color: Color
 }
 

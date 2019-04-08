@@ -85,15 +85,15 @@ extension DatabaseManager: UserDatabase {
     }
 
     @discardableResult
-    public func store(userData: UserData) -> Future<Void> {
+    public func store(userData: UserData) -> Future<UserData> {
         let usersSchema = Users()
         let insertQuery = Insert(into: usersSchema, values: [userData.userId, userData.userName, userData.color.toInt32])
-        let promise = Promise<Void>()
+        let promise = Promise<UserData>()
         connection.execute(query: insertQuery) { queryResult in
             if case .error(let err) = queryResult {
                 promise.reject(with: err)
             } else {
-                promise.resolve(with: ())
+                promise.resolve(with: userData)
             }
         }
         return promise
@@ -115,7 +115,7 @@ extension DatabaseManager: UserDatabase {
                 else { fatalError("Database error. Failed to get row values") }
             
             let color = Color(from: UInt32(bitPattern: colorInt32))
-            promise.resolve(with: UserData(userName: userName, userId: userId, color: color))
+            promise.resolve(with: UserData(userId: userId, userName: userName, color: color))
         }
         return promise
     }
@@ -136,7 +136,7 @@ extension DatabaseManager: UserDatabase {
                 else { fatalError("Database error. Failed to get row values") }
             
             let color = Color(from: UInt32(bitPattern: colorInt32))
-            promise.resolve(with: UserData(userName: userName, userId: UserId(userId32), color: color))
+            promise.resolve(with: UserData(userId: UserId(userId32), userName: userName, color: color))
         }
         return promise
     }

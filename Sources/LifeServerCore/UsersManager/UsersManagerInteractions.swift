@@ -19,34 +19,56 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-protocol UserDataProvider: class {
-    func userData(for userId: UserId) -> UserData?
-}
-
 extension UsersManager {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, UsersManagerMessage)>()
-        let sendMessage = PublishSubject<(ConnectionId, UsersManagerMessage)>()
+        let doSendMessage = PublishSubject<(ConnectionId, UsersManagerMessage)>()
 
-        fileprivate(set) weak var userDataProvider: UserDataProvider?
+        let onGetUserData = PublishSubject<(UserId, Promise<UserData>)>()
+        
+        let doDatabaseContainsUserWithId = PublishSubject<(UserId, Promise<Bool>)>()
+        let doDatabaseContainsUserWithName = PublishSubject<(String, Promise<Bool>)>()
+        let doDatabaseStore = PublishSubject<(UserData, Promise<UserData>)>()
+        let doDatabaseUserDataWithId = PublishSubject<(UserId, Promise<UserData>)>()
+        let doDatabaseUserDataWithName = PublishSubject<(String, Promise<UserData>)>()
+        let doDatabaseNumberOfRegisteredUsers = PublishSubject<(String, Promise<Int>)>()
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> UsersManager.Interactor {
         let interactor = Interactor()
 
-        interactor.userDataProvider = self
-
         interactor.onMessage.bind { connectionId, message in
             guard case .createUser(let userName, let color) = message else { return }
-            do {
-                let userData = try self.createUser(with: userName, and: color)
-                interactor.sendMessage.onNext((connectionId, .createUserResponse(userData: userData, error: nil)))
-            } catch {
-                interactor.sendMessage
-                    .onNext((connectionId, .createUserResponse(userData: nil, error: error.localizedDescription)))
+            
+            let promise = Promise<Int>()
+            interactor.doDatabaseNumberOfRegisteredUsers.onNext((userName, promise))
+            
+            promise.chained { lastUserId -> Future<UserData> in
+                let userData = UserData(userId: lastUserId+1, userName: userName, color: color)
+                let promise = Promise<UserData>()
+                interactor.doDatabaseStore.onNext((userData, promise))
+                return promise
+            }.observe { result in
+                switch result {
+                case .error(let error):
+                    interactor.doSendMessage.onNext((connectionId, .createUserResponse(userData: nil, error: error.localizedDescription)))
+                case .value(let userData):
+                    interactor.doSendMessage.onNext((connectionId, .createUserResponse(userData: userData, error: nil)))
+                }
             }
         }.disposed(by: disposeBag)
-
+        
+        /*
+        interactor.userData = { [weak self] userId in
+            guard let self = self else { return .empty() }
+            return interactor.dbUserDataWithId(userId)
+        }
+        //}.disposed(by: disposeBag) // <---- here it is desired implementation of binding closure to the "requestable subject"
+         */
+        // Interactor should have same life time as Users Manager
+        // But irl it can be different - longer or shorter, and both these situations should be handled
+        // 1. if interactor have shorter life time, it will be destroyed using disposeBag
+        // 2. if UsersManager destroyed before interactor, [weak self] and then check if self is not nil should do the trick
         return interactor
     }
 }

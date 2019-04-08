@@ -22,17 +22,9 @@ import RxCocoa
 open class LifeServerCore {
     let server = Server()
     let sessionManager = SessionManager()
-    let usersManager: UsersManager
+    let usersManager = UsersManager()
     let gameplay = Gameplay()
     let chat = Chat()
 
     let disposeBag = DisposeBag()
-
-    public init() {
-        do {
-            usersManager = try UsersManager()
-        } catch {
-            fatalError("UsersManager creation failed: \(error)")
-        }
-    }
 }
