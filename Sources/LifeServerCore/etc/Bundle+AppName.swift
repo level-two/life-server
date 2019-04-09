@@ -19,6 +19,8 @@ import Foundation
 
 extension Bundle {
     static var appName: String {
+        fatalError("Remove this file - this approach is not applicable on the Linux platform")
+        
         guard let dic = Bundle.main.infoDictionary else { fatalError("Couldn't get Bundle.main.infoDictionary") }
         guard let name = dic["CFBundleDsiplayName"] as? String else { fatalError("Couldn't get CFBundleDsiplayName") }
         return name

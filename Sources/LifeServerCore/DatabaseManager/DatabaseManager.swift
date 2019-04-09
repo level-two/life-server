@@ -139,6 +139,25 @@ extension DatabaseManager: UserDatabase {
             promise.resolve(with: UserData(userId: UserId(userId32), userName: userName, color: color))
         }
         return promise
+        /*
+        func rx_fetchSchools() -> Observable<[Schools]> {
+            return Observable.create({ (observer) -> Disposable in
+                let request = network.requestSchools() { (response: SchoolList?, error: APIError?) -> Void in
+                    if let error = error {
+                        observer.onError("ERROR!")
+                    }
+                    if let response = response  where response.list.count > 0 {
+                        observer.onNext(response.list)
+                    }
+                    // mark as completed this event
+                    observer.onCompleted()
+                }
+                return AnonymousDisposable{
+                    request.cancel()
+                }
+            })
+        }
+     */
     }
     
     public func numberOfRegisteredUsers() -> Future<Int> {
