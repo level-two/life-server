@@ -19,23 +19,30 @@ import Foundation
 import RxSwift
 import RxCocoa
 
+protocol UserDatabase: class {
+    func containsUser(with userId: UserId) -> Future<Bool>
+    func containsUser(with userName: String) -> Future<Bool>
+    func store(userData: UserData) -> Future<UserData>
+    func userData(with userId: UserId) -> Future<UserData>
+    func userData(with userName: String) -> Future<UserData>
+    func numberOfRegisteredUsers() -> Future<Int>
+}
+
+protocol ChatDatabase: class {
+}
+
 extension DatabaseManager {
     public class Interactor {
-        let containsUserWithId = RequestSubject<UserId, Bool>()
-        let containsUserWithName = RequestSubject<String, Bool>()
-        let store = RequestSubject<UserData, UserData>()
-        let userDataWithId = RequestSubject<UserId, UserData>()
-        let userDataWithName = RequestSubject<String, UserData>()
-        let numberOfRegisteredUsers = RequestSubject<String, Int>()
+        fileprivate(set) weak var userDatabase: UserDatabase?
+        fileprivate(set) weak var chatDatabase: ChatDatabase?
     }
     
     public func assembleInteractions(disposeBag: DisposeBag) -> Interactor {
         let interactor = Interactor()
         
-        numberOfRegisteredUsers.requestSubject.bind { [weak self] _, responseObservable in
-            self?.numberOfRegisteredUsers().bind(to:responseObservable).disposed(by: disposeBag)
-        }
-    
+        interactor.userDatabase = self
+        interactor.chatDatabase = self
+        
         return interactor
     }
 }
