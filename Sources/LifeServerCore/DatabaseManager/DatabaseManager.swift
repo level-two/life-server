@@ -139,27 +139,8 @@ extension DatabaseManager: UserDatabase {
             promise.resolve(with: UserData(userId: UserId(userId32), userName: userName, color: color))
         }
         return promise
-        /*
-        func rx_fetchSchools() -> Observable<[Schools]> {
-            return Observable.create({ (observer) -> Disposable in
-                let request = network.requestSchools() { (response: SchoolList?, error: APIError?) -> Void in
-                    if let error = error {
-                        observer.onError("ERROR!")
-                    }
-                    if let response = response  where response.list.count > 0 {
-                        observer.onNext(response.list)
-                    }
-                    // mark as completed this event
-                    observer.onCompleted()
-                }
-                return AnonymousDisposable{
-                    request.cancel()
-                }
-            })
-        }
-     */
     }
-    
+    /*
     public func numberOfRegisteredUsers() -> Future<Int> {
         let promise = Promise<Int>()
         let countQuery = "SELECT COUNT(userId) FROM USERS"
@@ -174,6 +155,39 @@ extension DatabaseManager: UserDatabase {
              promise.resolve(with: Int(count))
         }
         return promise
+    }
+    */
+    
+    public func numberOfRegisteredUsers() -> Future<Int> {
+        let countQuery = "SELECT COUNT(userId) FROM USERS"
+        connection.execute(countQuery) { queryResult in
+            guard
+                let row = queryResult.asRows?.first,
+                let count = row.first?.value as? Int32
+                else {
+                    fatalError("Failed to get number of registered users")
+            }
+            
+            //promise.resolve(with: Int(count))
+        }
+    }
+    
+    func rx_fetchSchools() -> Observable<Int> {
+        return Observable.create({ (observer) -> Disposable in
+            let request = network.requestSchools() { (response: SchoolList?, error: APIError?) -> Void in
+                if let error = error {
+                    observer.onError("ERROR!")
+                }
+                if let response = response  where response.list.count > 0 {
+                    observer.onNext(response.list)
+                }
+                // mark as completed this event
+                observer.onCompleted()
+            }
+            return AnonymousDisposable{
+                request.cancel()
+            }
+        })
     }
 }
 

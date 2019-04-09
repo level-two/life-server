@@ -19,8 +19,8 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-class OubtboundRequest<ValueT, ReturnT> {
-    var requestSubject = PublishSubject< (ValueT, ReplaySubject<ReturnT>) >()
+class RequestSubject<ValueT, ReturnT> {
+    public let requestSubject = PublishSubject< (ValueT, ReplaySubject<ReturnT>) >()
     
     func request(_ val: ValueT) -> Observable<ReturnT> {
         guard requestSubject.hasObservers else { fatalError("OubtboundRequest is expected to have observer to return data") }
@@ -29,7 +29,7 @@ class OubtboundRequest<ValueT, ReturnT> {
         return futureResult
     }
     
-    func bind(to next: OubtboundRequest<ValueT, ReturnT>) -> Disposable {
+    func bind(to next: RequestSubject<ValueT, ReturnT>) -> Disposable {
         return requestSubject.bind(to: next.requestSubject)
     }
 }
