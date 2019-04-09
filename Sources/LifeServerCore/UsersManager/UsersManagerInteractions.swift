@@ -26,12 +26,12 @@ extension UsersManager {
 
         let onGetUserData = PublishSubject<(UserId, Promise<UserData>)>()
         
-        let databaseContainsUserWithId = OubtboundRequest<UserId, Bool>()
-        let databaseContainsUserWithName = OubtboundRequest<String, Bool>()
-        let databaseStore = OubtboundRequest<UserData, UserData>()
-        let databaseUserDataWithId = OubtboundRequest<UserId, UserData>()
-        let databaseUserDataWithName = OubtboundRequest<String, UserData>()
-        let databaseNumberOfRegisteredUsers = OubtboundRequest<String, Int>()
+        let doDatabaseContainsUserWithId = PublishSubject<(UserId, Promise<Bool>)>()
+        let doDatabaseContainsUserWithName = PublishSubject<(String, Promise<Bool>)>()
+        let doDatabaseStore = PublishSubject<(UserData, Promise<UserData>)>()
+        let doDatabaseUserDataWithId = PublishSubject<(UserId, Promise<UserData>)>()
+        let doDatabaseUserDataWithName = PublishSubject<(String, Promise<UserData>)>()
+        let doDatabaseNumberOfRegisteredUsers = PublishSubject<(String, Promise<Int>)>()
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> UsersManager.Interactor {
@@ -40,9 +40,14 @@ extension UsersManager {
         interactor.onMessage.bind { connectionId, message in
             guard case .createUser(let userName, let color) = message else { return }
             
-            interactor.databaseNumberOfRegisteredUsers.request(userName).chained { lastUserId -> Future<UserData> in
+            let promise = Promise<Int>()
+            interactor.doDatabaseNumberOfRegisteredUsers.onNext((userName, promise))
+            
+            promise.chained { lastUserId -> Future<UserData> in
                 let userData = UserData(userId: lastUserId+1, userName: userName, color: color)
-                return interactor.databaseStore.request(userData)
+                let promise = Promise<UserData>()
+                interactor.doDatabaseStore.onNext((userData, promise))
+                return promise
             }.observe { result in
                 switch result {
                 case .error(let error):
@@ -65,15 +70,5 @@ extension UsersManager {
         // 1. if interactor have shorter life time, it will be destroyed using disposeBag
         // 2. if UsersManager destroyed before interactor, [weak self] and then check if self is not nil should do the trick
         return interactor
-    }
-}
-
-class OubtboundRequest<ValueT, ReturnT> {
-    var publishSubject = PublishSubject< (ValueT, Promise<ReturnT>) >()
-    
-    func request(_ val: ValueT) -> Future<ReturnT> {
-        let promise = Promise<ReturnT>()
-        publishSubject.onNext((val, promise))
-        return promise
     }
 }
