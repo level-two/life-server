@@ -25,10 +25,6 @@ extension Server {
         let onConnectionEstablished = PublishSubject<ConnectionId>()
         let onConnectionClosed      = PublishSubject<ConnectionId>()
         let onMessage               = PublishSubject<(ConnectionId, Data)>()
-
-        let sendMessage             = PublishSubject<(ConnectionId, Data)>()
-
-        fileprivate(set) var runServer: (_ host: String, _ port: Int) -> Void = { _, _ in }
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> Server.Interactor {
@@ -39,36 +35,36 @@ extension Server {
             .bind { [weak self] connectionId, data in self?.send(data, for: connectionId) }
             .disposed(by: disposeBag)
 
-        serverInteractor.runServer = { [weak self, weak serverInteractor] host, port in
-            guard let self = self else { return }
-
-            let bootstrap = self.makeBootstrap { [weak self, weak serverInteractor] channel in
-                let connectionId = channel.connectionId
-
-                self?.storeConnection(channel, with: connectionId)
-                serverInteractor?.onConnectionEstablished.onNext(connectionId)
-
-                _ = channel.closeFuture.map { [weak self, weak serverInteractor] _ in
-                    self?.removeConnection(with: connectionId)
-                    serverInteractor?.onConnectionClosed.onNext(connectionId)
-                }
-
-                let bridge = BridgeChannelHandler()
-                bridge.onMessage
-                    .bind { [weak serverInteractor] message in serverInteractor?.onMessage.onNext((connectionId, message)) }
-                    .disposed(by: bridge.disposeBag)
-
-                return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
-            }
-
-            self.listenChannel = try? bootstrap.bind(host: host, port: port).wait()
-            guard let localAddress = self.listenChannel?.localAddress else {
-                fatalError("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")
-            }
-
-            print("Server started and listening on \(localAddress)")
         }
 
         return serverInteractor
+    }
+
+    public func runServer(host: String, port: Int) {
+        let bootstrap = makeBootstrap() { [weak self] channel in
+            let connectionId = channel.connectionId
+            
+            self?.storeConnection(channel, with: connectionId)
+            serverInteractor?.onConnectionEstablished.onNext(connectionId)
+            
+            _ = channel.closeFuture.map { [weak self, weak serverInteractor] _ in
+                self?.removeConnection(with: connectionId)
+                serverInteractor?.onConnectionClosed.onNext(connectionId)
+            }
+            
+            let bridge = BridgeChannelHandler()
+            bridge.onMessage
+                .bind { [weak serverInteractor] message in serverInteractor?.onMessage.onNext((connectionId, message)) }
+                .disposed(by: bridge.disposeBag)
+            
+            return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
+        }
+        
+        self.listenChannel = try? bootstrap.bind(host: host, port: port).wait()
+        guard let localAddress = self.listenChannel?.localAddress else {
+            fatalError("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")
+        }
+        
+        print("Server started and listening on \(localAddress)")
     }
 }

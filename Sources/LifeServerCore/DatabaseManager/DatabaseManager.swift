@@ -32,36 +32,10 @@ class DatabaseManager {
         }
     }
     
-    deinit {
-        connection.closeConnection()
-    }
-    
     let connection: SQLiteConnection
 }
 
 extension DatabaseManager: UserDatabase {
-    class Users: Table {
-        enum Field: String {
-            case userId = "userId"
-            case userName = "userName"
-            case color = "color"
-        }
-        
-        let tableName = "Users"
-        let userId = Column("userId", Int32.self, primaryKey: true, unique: true)
-        let userName = Column("userName", String.self, unique: true)
-        let color = Column("color", Int32.self)
-    }
-    
-    func createUsersTable() {
-        let createTableQuery = "CREATE TABLE USERS(userId integer PRIMARY KEY, userName text UNIQUE, color integer)"
-        connection.execute(createTableQuery) { queryResult in
-            if let error = queryResult.asError {
-                fatalError("Failed to create USERS table: \(error)")
-            }
-        }
-    }
-    
     public func containsUser(with userId: UserId) -> Future<Bool> {
         let usersSchema = Users()
         let userQuery = Select(usersSchema.userId, from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
@@ -156,6 +130,18 @@ extension DatabaseManager: UserDatabase {
         }
         return promise
     }
+    
+}
+
+extension DatabaseManager {
+    func createUsersTable() {
+        let createTableQuery = "CREATE TABLE USERS(userId integer PRIMARY KEY, userName text UNIQUE, color integer)"
+        connection.execute(createTableQuery) { queryResult in
+            if let error = queryResult.asError {
+                fatalError("Failed to create USERS table: \(error)")
+            }
+        }
+    }
 }
 
 extension DatabaseManager: ChatDatabase {
@@ -163,6 +149,22 @@ extension DatabaseManager: ChatDatabase {
         //CREATE TABLE CHAT(messageId integer PRIMARY KEY, userId integer, userName text, message text);
     }
     // SELECT * FROM CHAT WHERE CHAT.messageId between 4 and 5;
+}
+
+
+extension DatabaseManager {
+    class Users: Table {
+        enum Field: String {
+            case userId = "userId"
+            case userName = "userName"
+            case color = "color"
+        }
+        
+        let tableName = "Users"
+        let userId = Column("userId", Int32.self, primaryKey: true, unique: true)
+        let userName = Column("userName", String.self, unique: true)
+        let color = Column("color", Int32.self)
+    }
 }
 
 extension Color {

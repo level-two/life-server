@@ -19,20 +19,20 @@ import Foundation
 
 enum UsersManagerMessage: Codable {
     case createUser(userName: String, color: Color)
-    case createUserResponse(userData: UserData?, error: String?)
+    case createUserSuccess(userData: UserData)
+    case createUserError(error: String)
 }
 
 extension UsersManagerMessage {
     private enum CodingKeys: String, CodingKey {
         case createUser
-        case createUserResponse
+        case createUserSuccess
+        case createUserError
     }
 
     private enum AuxCodingKeys: String, CodingKey {
-        case userData
         case userName
         case color
-        case error
     }
 
     public init(from decoder: Decoder) throws {
@@ -44,7 +44,8 @@ extension UsersManagerMessage {
         }
         switch key {
         case .createUser: self = try .createUser(userName: dec(.userName), color: dec(.color))
-        case .createUserResponse: self = try .createUserResponse(userData: dec(.userData), error: dec(.error))
+        case .createUserSuccess: self = try .createUserSuccess(userData: dec())
+        case .createUserError: self = try .createUserError(error: dec())
         }
     }
 
@@ -56,10 +57,10 @@ extension UsersManagerMessage {
             var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .createUser)
             try nestedContainter.encode(userName, forKey: .userName)
             try nestedContainter.encode(color, forKey: .color)
-        case .createUserResponse(let userData, let error):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .createUserResponse)
-            try nestedContainter.encode(userData, forKey: .userData)
-            try nestedContainter.encode(error, forKey: .error)
+        case .createUserSuccess(let userData):
+            try container.encode(userData, forKey: .createUserSuccess)
+        case .createUserError(let error):
+            try container.encode(error, forKey: .createUserError)
         }
     }
 }

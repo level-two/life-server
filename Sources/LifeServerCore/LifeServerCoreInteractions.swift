@@ -62,10 +62,11 @@ extension LifeServerCore {
             serverInteractor.sendMessage.onNext((connectionId, data))
         }.disposed(by: disposeBag)
 
-        usersManagerInteractor.sendMessage.bind { connectionId, message in
+        usersManagerInteractor.sendMessage = { [weak self] connectionId, message in
+            guard let self = self else { return }
             guard let data = try? JSONEncoder().encode(message) else { return }
-            serverInteractor.sendMessage.onNext((connectionId, data))
-        }.disposed(by: disposeBag)
+            server.sendMessage.(connectionId, data)
+        }
 
         gameplayInteractor.sendMessage.bind { userId, message in
             guard let connectionId = sessionManagerInteractor.loginStatusProvider?.connectionId(for: userId) else { return }

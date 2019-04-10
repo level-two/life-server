@@ -22,7 +22,6 @@
 
 /* Begin PBXBuildFile section */
 		93148E46224FDB6C003444A9 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93148E40224F7809003444A9 /* DatabaseManager.swift */; };
-		93148E47224FDB6C003444A9 /* DatabaseManagerInteractions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93148E42224F7831003444A9 /* DatabaseManagerInteractions.swift */; };
 		93148E48224FDCEC003444A9 /* Promises.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93148E44224F96D8003444A9 /* Promises.swift */; };
 		93F39F832250C53500F9E524 /* DatabaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F39F822250C53400F9E524 /* DatabaseManagerTests.swift */; };
 		OBJ_1001 /* _RXKVOObserver.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_398 /* _RXKVOObserver.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -1120,7 +1119,6 @@
 
 /* Begin PBXFileReference section */
 		93148E40224F7809003444A9 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
-		93148E42224F7831003444A9 /* DatabaseManagerInteractions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerInteractions.swift; sourceTree = "<group>"; };
 		93148E44224F96D8003444A9 /* Promises.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promises.swift; sourceTree = "<group>"; };
 		93F39F822250C53400F9E524 /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
 		"LifeServer::LifeServer::Product" /* LifeServer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = LifeServer; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1810,7 +1808,6 @@
 			isa = PBXGroup;
 			children = (
 				93148E40224F7809003444A9 /* DatabaseManager.swift */,
-				93148E42224F7831003444A9 /* DatabaseManagerInteractions.swift */,
 			);
 			path = DatabaseManager;
 			sourceTree = "<group>";
@@ -3763,7 +3760,6 @@
 				OBJ_643 /* ServerDataTypes.swift in Sources */,
 				OBJ_644 /* ServerInteractions.swift in Sources */,
 				OBJ_645 /* SessionManager.swift in Sources */,
-				93148E47224FDB6C003444A9 /* DatabaseManagerInteractions.swift in Sources */,
 				OBJ_646 /* SessionManagerInteractions.swift in Sources */,
 				OBJ_647 /* SessionManagerMessage.swift in Sources */,
 				OBJ_648 /* UsersManager.swift in Sources */,

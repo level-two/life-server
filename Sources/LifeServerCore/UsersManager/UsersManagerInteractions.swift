@@ -22,16 +22,13 @@ import RxCocoa
 extension UsersManager {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, UsersManagerMessage)>()
-        let doSendMessage = PublishSubject<(ConnectionId, UsersManagerMessage)>()
-
-        let onGetUserData = PublishSubject<(UserId, Promise<UserData>)>()
-        
-        let doDatabaseContainsUserWithId = PublishSubject<(UserId, Promise<Bool>)>()
-        let doDatabaseContainsUserWithName = PublishSubject<(String, Promise<Bool>)>()
-        let doDatabaseStore = PublishSubject<(UserData, Promise<UserData>)>()
-        let doDatabaseUserDataWithId = PublishSubject<(UserId, Promise<UserData>)>()
-        let doDatabaseUserDataWithName = PublishSubject<(String, Promise<UserData>)>()
-        let doDatabaseNumberOfRegisteredUsers = PublishSubject<(String, Promise<Int>)>()
+        var sendMessage:                     (ConnectionId, UsersManagerMessage) -> Void = { _,_ in fatalError() }
+        var databaseContainsUserWithId:      (UserId) -> Promise<Bool>                   = { _ in fatalError() }
+        var databaseContainsUserWithName:    (String) -> Promise<Bool>                   = { _ in fatalError() }
+        var databaseStore:                   (UserData) -> Promise<UserData>             = { _ in fatalError() }
+        var databaseUserDataWithId:          (UserId) -> Promise<UserData>               = { _ in fatalError() }
+        var databaseUserDataWithName:        (String) -> Promise<UserData>               = { _ in fatalError() }
+        var databaseNumberOfRegisteredUsers: (String) -> Promise<Int>                    = { _ in fatalError() }
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> UsersManager.Interactor {
@@ -40,20 +37,15 @@ extension UsersManager {
         interactor.onMessage.bind { connectionId, message in
             guard case .createUser(let userName, let color) = message else { return }
             
-            let promise = Promise<Int>()
-            interactor.doDatabaseNumberOfRegisteredUsers.onNext((userName, promise))
-            
-            promise.chained { lastUserId -> Future<UserData> in
+            interactor.databaseNumberOfRegisteredUsers(userName).chained { lastUserId -> Future<UserData> in
                 let userData = UserData(userId: lastUserId+1, userName: userName, color: color)
-                let promise = Promise<UserData>()
-                interactor.doDatabaseStore.onNext((userData, promise))
-                return promise
+                return interactor.databaseStore(userData)
             }.observe { result in
                 switch result {
                 case .error(let error):
-                    interactor.doSendMessage.onNext((connectionId, .createUserResponse(userData: nil, error: error.localizedDescription)))
+                    interactor.sendMessage(connectionId, .createUserError(error: error.localizedDescription))
                 case .value(let userData):
-                    interactor.doSendMessage.onNext((connectionId, .createUserResponse(userData: userData, error: nil)))
+                    interactor.sendMessage(connectionId, .createUserSuccess(userData: userData))
                 }
             }
         }.disposed(by: disposeBag)
