@@ -23,6 +23,7 @@
 /* Begin PBXBuildFile section */
 		93148E46224FDB6C003444A9 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93148E40224F7809003444A9 /* DatabaseManager.swift */; };
 		93148E48224FDCEC003444A9 /* Promises.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93148E44224F96D8003444A9 /* Promises.swift */; };
+		9364451C225DD41000AA0E37 /* DatabaseManagerInterfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9364451B225DD41000AA0E37 /* DatabaseManagerInterfaces.swift */; };
 		93F39F832250C53500F9E524 /* DatabaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F39F822250C53400F9E524 /* DatabaseManagerTests.swift */; };
 		OBJ_1001 /* _RXKVOObserver.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_398 /* _RXKVOObserver.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_1002 /* _RXObjCRuntime.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_399 /* _RXObjCRuntime.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -1120,6 +1121,7 @@
 /* Begin PBXFileReference section */
 		93148E40224F7809003444A9 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		93148E44224F96D8003444A9 /* Promises.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promises.swift; sourceTree = "<group>"; };
+		9364451B225DD41000AA0E37 /* DatabaseManagerInterfaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerInterfaces.swift; sourceTree = "<group>"; };
 		93F39F822250C53400F9E524 /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
 		"LifeServer::LifeServer::Product" /* LifeServer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = LifeServer; sourceTree = BUILT_PRODUCTS_DIR; };
 		"LifeServer::LifeServerCore::Product" /* LifeServerCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = LifeServerCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1807,6 +1809,7 @@
 		93148E3E224F77B5003444A9 /* DatabaseManager */ = {
 			isa = PBXGroup;
 			children = (
+				9364451B225DD41000AA0E37 /* DatabaseManagerInterfaces.swift */,
 				93148E40224F7809003444A9 /* DatabaseManager.swift */,
 			);
 			path = DatabaseManager;
@@ -3745,6 +3748,7 @@
 			files = (
 				OBJ_630 /* Chat.swift in Sources */,
 				OBJ_631 /* ChatDataTypes.swift in Sources */,
+				9364451C225DD41000AA0E37 /* DatabaseManagerInterfaces.swift in Sources */,
 				93148E46224FDB6C003444A9 /* DatabaseManager.swift in Sources */,
 				OBJ_632 /* ChatInteractions.swift in Sources */,
 				OBJ_633 /* ChatMessage.swift in Sources */,

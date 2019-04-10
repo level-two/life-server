@@ -144,6 +144,7 @@ extension DatabaseManager {
     }
 }
 
+
 extension DatabaseManager: ChatDatabase {
     func createChatTable() {
         //CREATE TABLE CHAT(messageId integer PRIMARY KEY, userId integer, userName text, message text);

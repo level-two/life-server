@@ -16,15 +16,16 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
-import RxSwift
-import RxCocoa
-import SwiftKuery
-import SwiftKuerySQLite
 
-public class UsersManager {
-    init(database: UserDatabase) {
-        self.database = database
-    }
-    
-    internal let database: UserDatabase
+protocol UserDatabase: class {
+    func containsUser(with userId: UserId) -> Future<Bool>
+    func containsUser(with userName: String) -> Future<Bool>
+    func store(userData: UserData) -> Future<UserData>
+    func userData(with userId: UserId) -> Future<UserData>
+    func userData(with userName: String) -> Future<UserData>
+    func numberOfRegisteredUsers() -> Future<Int>
+}
+
+protocol ChatDatabase: class {
+    // TBD
 }
