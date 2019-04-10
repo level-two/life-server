@@ -28,6 +28,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
         .package(url: "https://github.com/ReactiveX/RxSwift.git", "4.0.0" ..< "5.0.0"),
+        .package(url: "https://github.com/mxcl/PromiseKit.git", from: "6.8.0"),
         .package(url: "https://github.com/IBM-Swift/Swift-Kuery-SQLite.git", from: "1.0.0"),
     ],
     targets: [
@@ -37,6 +38,7 @@ let package = Package(
                            "NIOFoundationCompat",
                            "RxSwift",
                            "RxCocoa",
+                           "PromiseKit",
                            "SwiftKuerySQLite",
                            ]),
         .testTarget(

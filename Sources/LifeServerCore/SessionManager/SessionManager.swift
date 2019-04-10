@@ -18,6 +18,7 @@
 import Foundation
 import RxSwift
 import RxCocoa
+import PromiseKit
 
 enum SessionManagerError: Error {
     case invalidUserCreateRequest
@@ -34,21 +35,29 @@ enum SessionManagerError: Error {
     case noSessionForConnection
 }
 
-class SessionManager: LoginStatusProvider {
-    init() {
+class SessionManager {
+    init(database: UserDatabase) {
+        self.database = database
     }
+    
+    internal let database: UserDatabase
+}
 
-    func userId(for connectionId: ConnectionId) -> UserId? {
+
+extension SessionManager: LoginStatusProvider {
+    public func userId(for connectionId: ConnectionId) -> UserId? {
         return nil
     }
-
-    func connectionId(for userId: UserId) -> ConnectionId? {
+    
+    public func connectionId(for userId: UserId) -> ConnectionId? {
         return nil
     }
-
-    func loginStatus(for userId: UserId) -> Bool {
+    
+    public func loginStatus(for userId: UserId) -> Bool {
         return false
     }
+}
+
     
     /*
     // MARK: Public methods
@@ -232,5 +241,5 @@ class SessionManager: LoginStatusProvider {
             server?.send(to:connectionId, message:message)
         }
     }
-    */
 }
+ */

@@ -20,35 +20,33 @@ import Foundation
 enum SessionManagerMessage: Codable {
     case login(userName: String)
     case logout(userName: String)
-    case loginResponse(userData: UserData?, error: String?)
-    case logoutResponse(userData: UserData?, error: String?)
+    case loginResponseSuccess(userData: UserData)
+    case loginResponseError(error: String)
+    case logoutResponseSuccess(userData: UserData)
+    case logoutResponseError(error: String)
 }
 
 extension SessionManagerMessage {
     private enum CodingKeys: String, CodingKey {
         case login
         case logout
-        case loginResponse
-        case logoutResponse
-    }
-
-    private enum AuxCodingKeys: String, CodingKey {
-        case userData
-        case error
+        case loginResponseSuccess
+        case loginResponseError
+        case logoutResponseSuccess
+        case logoutResponseError
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         guard let key = container.allKeys.first else { throw "No valid keys in: \(container)" }
         func dec<T: Decodable>() throws -> T { return try container.decode(T.self, forKey: key) }
-        func dec<T: Decodable>(_ auxKey: AuxCodingKeys) throws -> T {
-            return try container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: key).decode(T.self, forKey: auxKey)
-        }
         switch key {
         case .login: self = try .login(userName: dec())
         case .logout: self = try .logout(userName: dec())
-        case .loginResponse: self = try .loginResponse(userData: dec(.userData), error: dec(.error))
-        case .logoutResponse: self = try .logoutResponse(userData: dec(.userData), error: dec(.error))
+        case .loginResponseSuccess: self = try .loginResponseSuccess(userData: dec())
+        case .loginResponseError: self = try .loginResponseError(error: dec())
+        case .logoutResponseSuccess: self = try .logoutResponseSuccess(userData: dec())
+        case .logoutResponseError: self = try .logoutResponseError(error: dec())
         }
     }
 
@@ -60,14 +58,14 @@ extension SessionManagerMessage {
             try container.encode(userName, forKey: .login)
         case .logout(let userName):
             try container.encode(userName, forKey: .logout)
-        case .loginResponse(let userData, let error):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .loginResponse)
-            try nestedContainter.encode(userData, forKey: .userData)
-            try nestedContainter.encode(error, forKey: .error)
-        case .logoutResponse(let userData, let error):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .logoutResponse)
-            try nestedContainter.encode(userData, forKey: .userData)
-            try nestedContainter.encode(error, forKey: .error)
+        case .loginResponseSuccess(let userData):
+            try container.encode(userData, forKey: .loginResponseSuccess)
+        case .loginResponseError(let error):
+            try container.encode(error, forKey: .loginResponseError)
+        case .logoutResponseSuccess(let userData):
+            try container.encode(userData, forKey: .logoutResponseSuccess)
+        case .logoutResponseError(let error):
+            try container.encode(error, forKey: .logoutResponseError)
         }
     }
 }

@@ -17,10 +17,8 @@
 
 import Foundation
 
-extension Bundle {
-    static var appName: String {
-        guard let dic = Bundle.main.infoDictionary else { fatalError("Couldn't get Bundle.main.infoDictionary") }
-        guard let name = dic["CFBundleDsiplayName"] as? String else { fatalError("Couldn't get CFBundleDsiplayName") }
-        return name
-    }
+public protocol LoginStatusProvider: class {
+    func userId(for connectionId: ConnectionId) -> UserId?
+    func connectionId(for userId: UserId) -> ConnectionId?
+    func loginStatus(for userId: UserId) -> Bool
 }

@@ -17,4 +17,6 @@
 
 import Foundation
 
-extension String: Error { }
+enum DatabaseManagerError: Error {
+    case noUser
+}

@@ -16,14 +16,15 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import PromiseKit
 
 protocol UserDatabase: class {
-    func containsUser(with userId: UserId) -> Future<Bool>
-    func containsUser(with userName: String) -> Future<Bool>
-    func store(userData: UserData) -> Future<UserData>
-    func userData(with userId: UserId) -> Future<UserData>
-    func userData(with userName: String) -> Future<UserData>
-    func numberOfRegisteredUsers() -> Future<Int>
+    func containsUser(with userId: UserId) -> Promise<Bool>
+    func containsUser(with userName: String) -> Promise<Bool>
+    func store(userData: UserData) -> Promise<UserData>
+    func userData(with userId: UserId) -> Promise<UserData>
+    func userData(with userName: String) -> Promise<UserData>
+    func numberOfRegisteredUsers() -> Promise<Int>
 }
 
 protocol ChatDatabase: class {

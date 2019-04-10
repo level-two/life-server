@@ -19,12 +19,6 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-public protocol LoginStatusProvider: class {
-    func userId(for connectionId: ConnectionId) -> UserId?
-    func connectionId(for userId: UserId) -> ConnectionId?
-    func loginStatus(for userId: UserId) -> Bool
-}
-
 extension SessionManager {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
@@ -35,38 +29,85 @@ extension SessionManager {
 
     public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
         let interactor = Interactor()
-        /*
-        interactor.onMessage.bind { connectionId, message in
+        
+        interactor.onMessage.bind { [weak self] connectionId, message in
+            guard let self = self else { return }
             guard case .login(let userName) = message else { return }
             
-            guard interactor.isUserExists(with: userName) else {
-                interactor.sendMessage.onNext((connectionId,
-                                               .loginUserResponse(userData: nil, error: SessionManagerError.userDoesntExist)))
+            self.database
+                .containsUser(with: userName).chained { userExists
+                    guard userExists else { return .loginUserResponseError(error: SessionManagerError.userDoesntExist) }
             }
-            
-            do {
-                try self.login(with: userName)
-                
-                interactor.sendMessage.onNext((connectionId, .loginUserResponse(userData: userData, error: nil)))
-            } catch {
-                interactor.sendMessage.onNext((connectionId,
-                                               .loginUserResponse(userData: nil, error: error.localizedDescription)))
-            }
+                    guard self.login(with: userName) else { return .loginUserResponseError(error: error.localizedDescription) }
+                    
+                    
+                    return .loginUserResponseSuccess(userData: userData)
+                }.observe { response in
+                    guard case .value(let responseMessage) = response else { fatalError() }
+                    interactor.sendMessage.onNext((connectionId, responseMessage))
+                }
         }.disposed(by: disposeBag)
+    
+    /*
+        guard uidVsCon[connectionId] != userId else {
+            throw SessionManagerError.UserAlreadyLoggedIn
+        }
+        
+        guard uidVsCon[connectionId] == kNoUserId else {
+            throw SessionManagerError.AnotherUserAlreadyLoggedIn
+        }
+        
+        guard uidVsCon.values.first(where:{$0 == userId}) == nil else {
+            throw SessionManagerError.UserAlreadyLoggedInOnOtherConnection
+        }
+        
+        threadSafe.performAsyncBarrier { [weak self] in
+            self?.userIdForConnectionId[connectionId] = userId
+        }
+        
+        // Notify client
+        let message = ["LoginResponse":["user":["userId":user.userId, "userName":user.name, "color":user.color]]]
+        
+        server?.send(to:connectionId, message:message)
+        
+        // Send event
+        self.userLoginEvent.raise(with: userId)
+        */
+        
+        
+        
+        
         
         interactor.onMessage.bind { connectionId, message in
             guard case .logout(let userName) = message else { return }
             do {
                 let userId = try self.logout(with: userName)
-                interactor.sendMessage.onNext((connectionId, .logoutUserResponse(userData: userData, error: nil)))
+                interactor.sendMessage.onNext((connectionId, .logoutUserResponseSuccess(userData: userData)))
             } catch {
-                interactor.sendMessage.onNext((connectionId,
-                                               .logoutUserResponse(userData: nil, error: error.localizedDescription)))
+                interactor.sendMessage.onNext((connectionId, .logoutUserResponseError(error: error.localizedDescription)))
             }
             }.disposed(by: disposeBag)
-         */
+        
         interactor.loginStatusProvider = self
 
         return interactor
     }
 }
+
+/*
+UIApplication.shared.isNetworkActivityIndicatorVisible = true
+
+let fetchImage = URLSession.shared.dataTask(.promise, with: url).compactMap{ UIImage(data: $0.data) }
+let fetchLocation = CLLocationManager.requestLocation().lastValue
+
+firstly {
+    when(fulfilled: fetchImage, fetchLocation)
+    }.done { image, location in
+        self.imageView.image = image
+        self.label.text = "\(location)"
+    }.ensure {
+        UIApplication.shared.isNetworkActivityIndicatorVisible = false
+    }.catch { error in
+        self.show(UIAlertController(for: error), sender: self)
+}
+*/

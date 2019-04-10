@@ -16,10 +16,24 @@
 // -----------------------------------------------------------------------------
 
 import Foundation
+import PromiseKit
 import SwiftKuery
 import SwiftKuerySQLite
 
 class DatabaseManager {
+    class Users: Table {
+        enum Field: String {
+            case userId = "userId"
+            case userName = "userName"
+            case color = "color"
+        }
+        
+        let tableName = "Users"
+        let userId = Column("userId", Int32.self, primaryKey: true, unique: true)
+        let userName = Column("userName", String.self, unique: true)
+        let color = Column("color", Int32.self)
+    }
+    
     init(with databaseUrl: URL = URL.applicationSupportDirectory.appendingPathComponent("LifeServer/database.db")) {
         let needInitDb = !FileManager.default.fileExists(atPath: databaseUrl.path)
         
@@ -36,101 +50,97 @@ class DatabaseManager {
 }
 
 extension DatabaseManager: UserDatabase {
-    public func containsUser(with userId: UserId) -> Future<Bool> {
+    public func containsUser(with userId: UserId) -> Promise<Bool> {
         let usersSchema = Users()
         let userQuery = Select(usersSchema.userId, from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
         let parameters = ["userIdParam": userId] as [String: Any?]
-        let promise = Promise<Bool>()
-        connection.execute(query: userQuery, parameters: parameters) { queryResult in
-            promise.resolve(with: queryResult.asRows?.first != nil)
+        return .init() { promise in
+            connection.execute(query: userQuery, parameters: parameters) { queryResult in
+                promise.fulfill(queryResult.asRows?.first != nil)
+            }
         }
-        return promise
     }
     
-    public func containsUser(with userName: String) -> Future<Bool> {
+    public func containsUser(with userName: String) -> Promise<Bool> {
         let usersSchema = Users()
         let userQuery = Select(usersSchema.userName, from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
         let parameters = ["userNameParam": userName] as [String: Any?]
-        let promise = Promise<Bool>()
-        connection.execute(query: userQuery, parameters: parameters) { queryResult in
-            promise.resolve(with: queryResult.asRows?.first != nil)
+        return .init() { promise in
+            connection.execute(query: userQuery, parameters: parameters) { queryResult in
+                promise.fulfill(queryResult.asRows?.first != nil)
+            }
         }
-        return promise
     }
 
     @discardableResult
-    public func store(userData: UserData) -> Future<UserData> {
+    public func store(userData: UserData) -> Promise<UserData> {
         let usersSchema = Users()
         let insertQuery = Insert(into: usersSchema, values: [userData.userId, userData.userName, userData.color.toInt32])
-        let promise = Promise<UserData>()
-        connection.execute(query: insertQuery) { queryResult in
-            if case .error(let err) = queryResult {
-                promise.reject(with: err)
-            } else {
-                promise.resolve(with: userData)
+        return .init() { promise in
+            connection.execute(query: insertQuery) { queryResult in
+                if case .error(let err) = queryResult {
+                    promise.reject(with: err)
+                } else {
+                    promise.fulfill(userData)
+                }
             }
         }
-        return promise
     }
 
-    public func userData(with userId: UserId) -> Future<UserData> {
+    public func userData(with userId: UserId) -> Promise<UserData> {
         let usersSchema = Users()
         let userQuery = Select(from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
         let parameters = ["userIdParam": userId] as [String: Any?]
-        let promise = Promise<UserData>()
-        connection.execute(query: userQuery, parameters: parameters) { queryResult in
-            guard let row = queryResult.asRows?.first else {
-                return promise.reject(with: "No such user for given id: \(userId)")
+        return .init() { promise in
+            connection.execute(query: userQuery, parameters: parameters) { queryResult in
+                guard let row = queryResult.asRows?.first else {
+                    return promise.reject(DatabaseManagerError.noUser)
+                }
+                
+                guard
+                    let userName = row["userName"] as? String,
+                    let colorInt32 = row["color"] as? Int32
+                    else { fatalError("Database error. Failed to get row values") }
+                
+                let color = Color(from: UInt32(bitPattern: colorInt32))
+                promise.fulfill(UserData(userId: userId, userName: userName, color: color))
             }
-            
-            guard
-                let userName = row["userName"] as? String,
-                let colorInt32 = row["color"] as? Int32
-                else { fatalError("Database error. Failed to get row values") }
-            
-            let color = Color(from: UInt32(bitPattern: colorInt32))
-            promise.resolve(with: UserData(userId: userId, userName: userName, color: color))
         }
-        return promise
     }
     
-    public func userData(with userName: String) -> Future<UserData> {
+    public func userData(with userName: String) -> Promise<UserData> {
         let usersSchema = Users()
         let userQuery = Select(from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
         let parameters = ["userNameParam": userName] as [String: Any?]
-        let promise = Promise<UserData>()
-        connection.execute(query: userQuery, parameters: parameters) { queryResult in
-            guard let row = queryResult.asRows?.first else {
-                return promise.reject(with: "No such user with given name: \(userName)")
+        
+        return .init() { promise in
+            connection.execute(query: userQuery, parameters: parameters) { queryResult in
+                guard let row = queryResult.asRows?.first else { return promise.reject(DatabaseManagerError.noUser) }
+                
+                guard
+                    let userId32 = row["userId"] as? Int32,
+                    let colorInt32 = row["color"] as? Int32
+                    else { fatalError("Database error. Failed to get row values") }
+                
+                let color = Color(from: UInt32(bitPattern: colorInt32))
+                promise.fulfill(UserData(userId: UserId(userId32), userName: userName, color: color))
             }
-            
-            guard
-                let userId32 = row["userId"] as? Int32,
-                let colorInt32 = row["color"] as? Int32
-                else { fatalError("Database error. Failed to get row values") }
-            
-            let color = Color(from: UInt32(bitPattern: colorInt32))
-            promise.resolve(with: UserData(userId: UserId(userId32), userName: userName, color: color))
         }
-        return promise
     }
     
-    public func numberOfRegisteredUsers() -> Future<Int> {
-        let promise = Promise<Int>()
+    public func numberOfRegisteredUsers() -> Promise<Int> {
         let countQuery = "SELECT COUNT(userId) FROM USERS"
-        connection.execute(countQuery) { queryResult in
-            guard
-                let row = queryResult.asRows?.first,
-                let count = row.first?.value as? Int32
-                else {
-                    fatalError("Failed to get number of registered users")
-                }
-            
-             promise.resolve(with: Int(count))
+        
+        return .init() { promise in
+                connection.execute(countQuery) { queryResult in
+                guard
+                    let row = queryResult.asRows?.first,
+                    let count = row.first?.value as? Int32
+                    else { fatalError("Failed to get number of registered users") }
+                promise.fulfill(Int(count))
+            }
         }
-        return promise
     }
-    
 }
 
 extension DatabaseManager {
@@ -150,22 +160,6 @@ extension DatabaseManager: ChatDatabase {
         //CREATE TABLE CHAT(messageId integer PRIMARY KEY, userId integer, userName text, message text);
     }
     // SELECT * FROM CHAT WHERE CHAT.messageId between 4 and 5;
-}
-
-
-extension DatabaseManager {
-    class Users: Table {
-        enum Field: String {
-            case userId = "userId"
-            case userName = "userName"
-            case color = "color"
-        }
-        
-        let tableName = "Users"
-        let userId = Column("userId", Int32.self, primaryKey: true, unique: true)
-        let userName = Column("userName", String.self, unique: true)
-        let color = Column("color", Int32.self)
-    }
 }
 
 extension Color {
