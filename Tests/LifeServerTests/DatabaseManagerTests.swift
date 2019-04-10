@@ -22,18 +22,15 @@ import RxCocoa
 
 final class DatabaseManagerTests: XCTestCase {
     static let databaseUrl = URL.applicationSupportDirectory.appendingPathComponent("LifeServer/testdatabase.db")
-    var databaseManager: DatabaseManager!
-    var interactor: DatabaseManager.Interactor!
+    var userDatabase: UserDatabase!
     let disposeBag = DisposeBag()
     
     override func setUp() {
-        databaseManager = DatabaseManager(with: DatabaseManagerTests.databaseUrl)
-        interactor = databaseManager.assembleInteractions(disposeBag: disposeBag)
+        userDatabase = DatabaseManager(with: DatabaseManagerTests.databaseUrl)
     }
     
     override func tearDown() {
-        interactor = nil
-        databaseManager = nil
+        userDatabase = nil
         try! FileManager.default.removeItem(at: DatabaseManagerTests.databaseUrl)
     }
     
@@ -45,21 +42,21 @@ final class DatabaseManagerTests: XCTestCase {
         let userId = 1
         let userData = UserData(userName: "Test", userId: userId, color: .init(from: 0xaabbccdd))
 
-        interactor.userDatabase?.store(userData: userData).observe { result in
+        userDatabase.store(userData: userData).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData)
             }
         }
         
-        interactor.userDatabase?.containsUser(with: userId).observe { result in
+        userDatabase.containsUser(with: userId).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let success): XCTAssertTrue(success)
             }
         }
         
-        interactor.userDatabase?.userData(with: userId).observe { result in
+        userDatabase.userData(with: userId).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData)
@@ -74,56 +71,56 @@ final class DatabaseManagerTests: XCTestCase {
         let userData1 = UserData(userName: userName, userId: userId1, color: .init(from: 0xdeadbeef))
         let userData2 = UserData(userName: userName, userId: userId2, color: .init(from: 0x12345678))
         
-        interactor.userDatabase?.store(userData: userData1).observe { result in
+        userDatabase.store(userData: userData1).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
-        interactor.userDatabase?.store(userData: userData2).observe { result in
+        userDatabase.store(userData: userData2).observe { result in
             switch result {
             case .error(_): ()
             case .value(_): XCTFail()
             }
         }
         
-        interactor.userDatabase?.containsUser(with: userName).observe { result in
+        userDatabase.containsUser(with: userName).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let success): XCTAssertTrue(success)
             }
         }
         
-        interactor.userDatabase?.containsUser(with: userId1).observe { result in
+        userDatabase.containsUser(with: userId1).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let success): XCTAssertTrue(success)
             }
         }
         
-        interactor.userDatabase?.containsUser(with: userId2).observe { result in
+        userDatabase.containsUser(with: userId2).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let success): XCTAssertFalse(success)
             }
         }
         
-        interactor.userDatabase?.userData(with: userName).observe { result in
+        userDatabase.userData(with: userName).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
-        interactor.userDatabase?.userData(with: userId1).observe { result in
+        userDatabase.userData(with: userId1).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
-        interactor.userDatabase?.userData(with: userId2).observe { result in
+        userDatabase.userData(with: userId2).observe { result in
             switch result {
             case .error(_): ()
             case .value(_): XCTFail()
@@ -138,56 +135,56 @@ final class DatabaseManagerTests: XCTestCase {
         let userData1 = UserData(userName: userName1, userId: userId, color: .init(from: 0xdeadbeef))
         let userData2 = UserData(userName: userName2, userId: userId, color: .init(from: 0x12345678))
         
-        interactor.userDatabase?.store(userData: userData1).observe { result in
+        userDatabase.store(userData: userData1).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
-        interactor.userDatabase?.store(userData: userData2).observe { result in
+        userDatabase.store(userData: userData2).observe { result in
             switch result {
             case .error(_): ()
             case .value(_): XCTFail()
             }
         }
         
-        interactor.userDatabase?.containsUser(with: userName1).observe { result in
+        userDatabase.containsUser(with: userName1).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let success): XCTAssertTrue(success)
             }
         }
         
-        interactor.userDatabase?.containsUser(with: userName2).observe { result in
+        userDatabase.containsUser(with: userName2).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let success): XCTAssertFalse(success)
             }
         }
         
-        interactor.userDatabase?.containsUser(with: userId).observe { result in
+        userDatabase.containsUser(with: userId).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let success): XCTAssertTrue(success)
             }
         }
         
-        interactor.userDatabase?.userData(with: userId).observe { result in
+        userDatabase.userData(with: userId).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
-        interactor.userDatabase?.userData(with: userName1).observe { result in
+        userDatabase.userData(with: userName1).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
-        interactor.userDatabase?.userData(with: userName2).observe { result in
+        userDatabase.userData(with: userName2).observe { result in
             switch result {
             case .error(_): ()
             case .value(_): XCTFail()
@@ -199,35 +196,35 @@ final class DatabaseManagerTests: XCTestCase {
         let userData1 = UserData(userName: "userName1", userId: 1, color: .init(from: 0xdeadbeef))
         let userData2 = UserData(userName: "userName2", userId: 2, color: .init(from: 0x12345678))
         
-        interactor.userDatabase?.numberOfRegisteredUsers().observe { result in
+        userDatabase.numberOfRegisteredUsers().observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let count): XCTAssertEqual(count, 0)
             }
         }
         
-        interactor.userDatabase?.store(userData: userData1).observe { result in
+        userDatabase.store(userData: userData1).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData1)
             }
         }
         
-        interactor.userDatabase?.numberOfRegisteredUsers().observe { result in
+        userDatabase.numberOfRegisteredUsers().observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let count): XCTAssertEqual(count, 1)
             }
         }
         
-        interactor.userDatabase?.store(userData: userData2).observe { result in
+        userDatabase.store(userData: userData2).observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let data): XCTAssertEqual(data, userData2)
             }
         }
         
-        interactor.userDatabase?.numberOfRegisteredUsers().observe { result in
+        userDatabase.numberOfRegisteredUsers().observe { result in
             switch result {
             case .error(_): XCTFail()
             case .value(let count): XCTAssertEqual(count, 2)
