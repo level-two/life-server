@@ -18,6 +18,7 @@
 import Foundation
 import RxSwift
 import RxCocoa
+import PromiseKit
 
 extension SessionManager {
     public class Interactor {
@@ -34,18 +35,17 @@ extension SessionManager {
             guard let self = self else { return }
             guard case .login(let userName) = message else { return }
             
-            self.database
-                .containsUser(with: userName).chained { userExists
-                    guard userExists else { return .loginUserResponseError(error: SessionManagerError.userDoesntExist) }
+            firstly {
+                self.database.containsUser(with: userName)
+            }.then {
+                self.login(with: userName)
+            }.then {
+                self.database.userData(with: userName)
+            }.finally {
+                interactor.sendMessage.onNext((connectionId, .loginUserResponseSuccess($0)))
+            }.catch {
+                interactor.sendMessage.onNext((connectionId, .loginUserResponseError(error: $0)))
             }
-                    guard self.login(with: userName) else { return .loginUserResponseError(error: error.localizedDescription) }
-                    
-                    
-                    return .loginUserResponseSuccess(userData: userData)
-                }.observe { response in
-                    guard case .value(let responseMessage) = response else { fatalError() }
-                    interactor.sendMessage.onNext((connectionId, responseMessage))
-                }
         }.disposed(by: disposeBag)
     
     /*
