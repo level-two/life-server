@@ -20,28 +20,41 @@ import RxSwift
 import RxCocoa
 import PromiseKit
 
-enum SessionManagerError: Error {
-    case invalidUserCreateRequest
-    case invalidUserLoginRequest
-    case invalidUserLogoutRequest
-    case userDoesntExist
-    case createUserReturnedNil
-    case userIsNotLoggedIn
-    case userAlreadyLoggedIn
-    case userAlreadyLoggedInOnOtherConnection
-    case anotherUserAlreadyLoggedIn
-    case userAlreadyLoggedOut
-    case invalidUserIdForLogout
-    case noSessionForConnection
-}
-
 class SessionManager {
     init(database: UserDatabase) {
         self.database = database
     }
     
-    internal let database: UserDatabase
+    let database: UserDatabase
+    let queue = DispatchQueue(label: "life.server.session.manager", attributes: .concurrent)
+    var userVsConnectionBinding: [ConnectionId: UserId]
 }
+
+
+extension SessionManager {
+    private func isLoggedIn(_ userId: UserId) -> Bool {
+        var result = false
+        queue.sync { [weak self] in
+            result = self?.userVsConnectionBinding.contains { $1 == userId } ?? false
+        }
+        return result
+    }
+    
+    private func isSessionEstablished(for connectionId: ConnectionId) -> Bool {
+        var result = false
+        queue.sync { [weak self] in
+            result = self?.userVsConnectionBinding.contains { $0 == connectionId } ?? false
+        }
+        return result
+    }
+    
+    private func logIn(_ userId: UserId, on connectionId: ConnectionId) {
+        queue.async(flags: .barrier) { [weak self] in
+            self?.userVsConnectionBinding[connectionId] = userId
+        }
+    }
+}
+
 
 
 extension SessionManager: LoginStatusProvider {

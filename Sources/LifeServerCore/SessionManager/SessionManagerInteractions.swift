@@ -20,6 +20,22 @@ import RxSwift
 import RxCocoa
 import PromiseKit
 
+
+enum SessionManagerError: Error {
+    case invalidUserCreateRequest
+    case invalidUserLoginRequest
+    case invalidUserLogoutRequest
+    case userDoesntExist
+    case createUserReturnedNil
+    case userIsNotLoggedIn
+    case userAlreadyLoggedIn
+    case anotherUserAlreadyLoggedIn
+    case userAlreadyLoggedOut
+    case invalidUserIdForLogout
+    case noSessionForConnection
+}
+
+
 extension SessionManager {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
@@ -37,14 +53,15 @@ extension SessionManager {
             
             firstly {
                 self.database.containsUser(with: userName)
-            }.then {
-                self.login(with: userName)
-            }.then {
-                self.database.userData(with: userName)
-            }.finally {
-                interactor.sendMessage.onNext((connectionId, .loginUserResponseSuccess($0)))
+            }.map {
+                guard $0 else { throw SessionManagerError.userDoesntExist }
+                guard !isLoggedIn(userName) else { throw SessionManagerError.userAlreadyLoggedIn }
+                guard !isSessionEstablished(for: connectionId) else { throw SessionManagerError.anotherUserAlreadyLoggedIn }
+                logIn(userName, on: connectionId)
+            }.map {
+                interactor.sendMessage.onNext((connectionId, .loginResponseSuccess(userName)))
             }.catch {
-                interactor.sendMessage.onNext((connectionId, .loginUserResponseError(error: $0)))
+                interactor.sendMessage.onNext((connectionId, .loginResponseError(error: $0)))
             }
         }.disposed(by: disposeBag)
     
@@ -74,25 +91,28 @@ extension SessionManager {
         self.userLoginEvent.raise(with: userId)
         */
         
-        
+        /*
         
         
         
         interactor.onMessage.bind { connectionId, message in
             guard case .logout(let userName) = message else { return }
-            do {
-                let userId = try self.logout(with: userName)
-                interactor.sendMessage.onNext((connectionId, .logoutUserResponseSuccess(userData: userData)))
+            firstly {
+                try self.logout(with: userName)
+                interactor.sendMessage.onNext((connectionId, .loginUserResponseSuccess(userData: userData)))
             } catch {
-                interactor.sendMessage.onNext((connectionId, .logoutUserResponseError(error: error.localizedDescription)))
+                interactor.sendMessage.onNext((connectionId, .loginUserResponseError(error: error.localizedDescription)))
             }
             }.disposed(by: disposeBag)
         
         interactor.loginStatusProvider = self
-
+         */
+        
         return interactor
     }
 }
+
+
 
 /*
 UIApplication.shared.isNetworkActivityIndicatorVisible = true
