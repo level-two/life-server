@@ -21,11 +21,6 @@ import RxCocoa
 import PromiseKit
 
 class SessionManager {
-    struct SessionInfo {
-        var userId: UserId
-        var connectionId: ConnectionId
-    }
-    
     init(database: UserDatabase) {
         self.database = database
     }
@@ -35,50 +30,56 @@ class SessionManager {
     var sessions: [SessionInfo]
 }
 
-extension SessionManager: LoginStatusProvider {
-    public func userId(for connectionId: ConnectionId) -> UserId? {
-        var result: UserId?
+extension SessionManager {
+    public func sessionInfo(for connectionId: ConnectionId) -> SessionInfo? {
+        var result: SessionInfo?
         queue.sync { [weak self] in
-            result = self?.sessions.first { $0.connectionId == connectionId }?.userId
+            result = self?.sessions.first { $0.connectionId == connectionId }
         }
         return result
     }
     
-    public func connectionId(for userId: UserId) -> ConnectionId? {
-        var result: ConnectionId?
+    public func sessionInfo(with userId: UserId) -> SessionInfo? {
+        var result: SessionInfo?
         queue.sync { [weak self] in
-            result = self?.sessions.first { $0.userId == userId }?.connectionId
-        }
-        return result
-    }
-    
-    public func isLoggedIn(_ userId: UserId) -> Bool {
-        var result = false
-        queue.sync { [weak self] in
-            result = self?.sessions.contains { $0.userId == userId } ?? false
+            result = self?.sessions.first { $0.userId == userId }
         }
         return result
     }
 }
 
 extension SessionManager {
-    func isSessionEstablished(for connectionId: ConnectionId) -> Bool {
-        var result = false
-        queue.sync { [weak self] in
-            result = self?.sessions.contains { $0.connectionId == connectionId } ?? false
-        }
-        return result
+    func isLoggedIn(on connectionId: ConnectionId) -> Bool {
+        return sessionInfo(for: connectionId)?.userId != nil
+    }
+    
+    public func isLoggedIn(_ userId: UserId) -> Bool {
+        return sessionInfo(with: userId) != nil
     }
     
     func login(_ userId: UserId, on connectionId: ConnectionId) {
         queue.async(flags: .barrier) { [weak self] in
-            self?.sessions.append(.init(userId: userId, connectionId: connectionId))
+            guard let self = self else { return }
+            guard let idx = self.sessions.firstIndex(where:{$0.connectionId == connectionId}) else { fatalError("Info data is expected to exist") }
+            var sessionInfo = self.sessions[idx]
+            sessionInfo.userId = userId
+            self.sessions[idx] = sessionInfo
         }
     }
     
     func logout(_ userId: UserId, on connectionId: ConnectionId) {
         queue.async(flags: .barrier) { [weak self] in
-            self?.sessions.removeAll { $0.userId == userId && $0.connectionId == connectionId }
+            guard let self = self else { return }
+            guard let idx = self.sessions.firstIndex(where:{$0.connectionId == connectionId}) else { fatalError("Info data is expected to exist") }
+            var sessionInfo = self.sessions[idx]
+            sessionInfo.userId = nil
+            self.sessions[idx] = sessionInfo
+        }
+    }
+    
+    func connectionEstablished(with connectionId: ConnectionId) {
+        queue.async(flags: .barrier) { [weak self] in
+            self?.sessions.append(.init(userId: nil, connectionId: connectionId))
         }
     }
     

@@ -21,7 +21,6 @@ import RxCocoa
 
 extension LifeServerCore {
     open class Interactor {
-        fileprivate(set) public var runServer: (_ host: String, _ port: Int) -> Void = { _, _ in }
     }
 
     open func assembleInteractions() -> LifeServerCore.Interactor {
@@ -44,7 +43,7 @@ extension LifeServerCore {
                 return
             }
 
-            guard let userId = sessionManagerInteractor.loginStatusProvider?.userId(for: connectionId) else { return }
+            guard let userId = sessionManager.sessionInfo(for: connectionId)?.userId else { return }
 
             if let gameplayMessage = try? JSONDecoder().decode(GameplayMessage.self, from: data) {
                 gameplayInteractor.onMessage.onNext((userId, gameplayMessage))
@@ -56,6 +55,14 @@ extension LifeServerCore {
                 return
             }
         }.disposed(by: disposeBag)
+        
+        serverInteractor.onConnectionEstablished
+            .bind(to: sessionManagerInteractor.onConnectionEstablished)
+            .disposed(by: disposeBag)
+        
+        serverInteractor.onConnectionClosed
+            .bind(to: sessionManagerInteractor.onConnectionClosed)
+            .disposed(by: disposeBag)
 
         sessionManagerInteractor.sendMessage.bind { connectionId, message in
             guard let data = try? JSONEncoder().encode(message) else { return }
@@ -88,8 +95,11 @@ extension LifeServerCore {
         }
 
         let lifeServerCoreInteractor = LifeServerCore.Interactor()
-        lifeServerCoreInteractor.runServer = { [weak serverInteractor] host, port in serverInteractor?.runServer(host, port) }
 
         return lifeServerCoreInteractor
+    }
+    
+    public func runServer(host: String, port: Int) {
+        server.runServer(host, port)
     }
 }

@@ -39,7 +39,9 @@ extension SessionManager {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
         let sendMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
-        let onConnectionClosed = PublishSubject<ConnectionId>()
+        
+        let onConnectionEstablished = PublishSubject<ConnectionId>()
+        let onConnectionClosed      = PublishSubject<ConnectionId>()
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
@@ -53,7 +55,7 @@ extension SessionManager {
                 self.database.userData(with: userName)
             }.map { userData in
                 guard !self.isLoggedIn(userData.userId) else { throw SessionManagerError.userAlreadyLoggedIn }
-                guard !self.isSessionEstablished(for: connectionId) else { throw SessionManagerError.anotherUserAlreadyLoggedIn }
+                guard !self.isLoggedIn(on: connectionId) else { throw SessionManagerError.anotherUserAlreadyLoggedIn }
                 self.login(userData.userId, on: connectionId)
                 interactor.sendMessage.onNext((connectionId, .loginResponseSuccess(userData: userData)))
             }.catch {
@@ -70,19 +72,23 @@ extension SessionManager {
                 self.database.userData(with: userName)
             }.map { userData in
                 guard self.isLoggedIn(userData.userId) else { throw SessionManagerError.userIsNotLoggedIn }
-                guard self.isSessionEstablished(for: connectionId) else { throw SessionManagerError.noSessionForConnection }
-                guard self.userId(for: connectionId) == userData.userId else { throw SessionManagerError.invalidUserIdForLogout }
+                guard self.isLoggedIn(on: connectionId) else { throw SessionManagerError.noSessionForConnection }
+                guard self.sessionInfo(for: connectionId)?.userId == userData.userId else { throw SessionManagerError.invalidUserIdForLogout }
                 self.logout(userData.userId, on: connectionId)
                 interactor.sendMessage.onNext((connectionId, .logoutResponseSuccess(userData: userData)))
             }.catch {
                 interactor.sendMessage.onNext((connectionId, .logoutResponseError(error: $0.localizedDescription)))
             }
-            
         }.disposed(by: disposeBag)
         
-        interactor.onConnectionClosed.bind { [weak self] connectionId in
-            self?.connectionClosed(with: connectionId)
-        }.disposed(by: disposeBag)
+        
+        interactor.onConnectionEstablished
+            .bind { [weak self] connectionId in self?.connectionEstablished(with: connectionId) }
+            .disposed(by: disposeBag)
+        
+        interactor.onConnectionClosed
+            .bind { [weak self] connectionId in self?.connectionClosed(with: connectionId) }
+            .disposed(by: disposeBag)
         
         return interactor
     }

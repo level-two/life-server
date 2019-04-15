@@ -17,8 +17,7 @@
 
 import Foundation
 
-public protocol LoginStatusProvider: class {
-    func userId(for connectionId: ConnectionId) -> UserId?
-    func connectionId(for userId: UserId) -> ConnectionId?
-    func loginStatus(for userId: UserId) -> Bool
+struct SessionInfo {
+    var userId: UserId?
+    var connectionId: ConnectionId
 }
