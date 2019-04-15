@@ -21,53 +21,59 @@ import RxCocoa
 import PromiseKit
 
 class SessionManager {
+    struct SessionInfo {
+        var userId: UserId
+        var connectionId: ConnectionId
+    }
+    
     init(database: UserDatabase) {
         self.database = database
     }
     
     let database: UserDatabase
     let queue = DispatchQueue(label: "life.server.session.manager", attributes: .concurrent)
-    var userVsConnectionBinding: [ConnectionId: UserId]
+    var sessions: [SessionInfo]
 }
 
-
 extension SessionManager {
-    private func isLoggedIn(_ userId: UserId) -> Bool {
-        var result = false
-        queue.sync { [weak self] in
-            result = self?.userVsConnectionBinding.contains { $1 == userId } ?? false
-        }
-        return result
-    }
-    
     private func isSessionEstablished(for connectionId: ConnectionId) -> Bool {
         var result = false
         queue.sync { [weak self] in
-            result = self?.userVsConnectionBinding.contains { $0 == connectionId } ?? false
+            result = self?.sessions.contains { $0.connectionId == connectionId } ?? false
         }
         return result
     }
     
     private func logIn(_ userId: UserId, on connectionId: ConnectionId) {
         queue.async(flags: .barrier) { [weak self] in
-            self?.userVsConnectionBinding[connectionId] = userId
+            self?.sessions.append(.init(userId: userId, connectionId: connectionId))
         }
     }
 }
 
-
-
 extension SessionManager: LoginStatusProvider {
     public func userId(for connectionId: ConnectionId) -> UserId? {
-        return nil
+        var result: UserId?
+        queue.sync { [weak self] in
+            result = self?.sessions.first { $0.connectionId == connectionId }?.userId
+        }
+        return result
     }
     
     public func connectionId(for userId: UserId) -> ConnectionId? {
-        return nil
+        var result: ConnectionId?
+        queue.sync { [weak self] in
+            result = self?.sessions.first { $0.userId == userId }?.connectionId
+        }
+        return result
     }
     
-    public func loginStatus(for userId: UserId) -> Bool {
-        return false
+    public func isLoggedIn(_ userId: UserId) -> Bool {
+        var result = false
+        queue.sync { [weak self] in
+            result = self?.sessions.contains { $0.userId == userId } ?? false
+        }
+        return result
     }
 }
 
