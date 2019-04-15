@@ -79,7 +79,7 @@ extension DatabaseManager: UserDatabase {
         return .init() { promise in
             connection.execute(query: insertQuery) { queryResult in
                 if case .error(let err) = queryResult {
-                    promise.reject(with: err)
+                    promise.reject(err)
                 } else {
                     promise.fulfill(userData)
                 }

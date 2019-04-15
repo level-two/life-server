@@ -21,7 +21,7 @@ import RxCocoa
 import PromiseKit
 
 
-enum SessionManagerError: Error {
+enum SessionManagerError: Int, Error {
     case invalidUserCreateRequest
     case invalidUserLoginRequest
     case invalidUserLogoutRequest
@@ -35,13 +35,11 @@ enum SessionManagerError: Error {
     case noSessionForConnection
 }
 
-
 extension SessionManager {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
         let sendMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
-
-        fileprivate(set) weak var loginStatusProvider: LoginStatusProvider?
+        let onConnectionClosed = PublishSubject<ConnectionId>()
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
@@ -52,82 +50,40 @@ extension SessionManager {
             guard case .login(let userName) = message else { return }
             
             firstly {
-                self.database.containsUser(with: userName)
-            }.map {
-                guard $0 else { throw SessionManagerError.userDoesntExist }
-                guard !isLoggedIn(userName) else { throw SessionManagerError.userAlreadyLoggedIn }
-                guard !isSessionEstablished(for: connectionId) else { throw SessionManagerError.anotherUserAlreadyLoggedIn }
-                logIn(userName, on: connectionId)
-            }.map {
-                interactor.sendMessage.onNext((connectionId, .loginResponseSuccess(userName)))
+                self.database.userData(with: userName)
+            }.map { userData in
+                guard !self.isLoggedIn(userData.userId) else { throw SessionManagerError.userAlreadyLoggedIn }
+                guard !self.isSessionEstablished(for: connectionId) else { throw SessionManagerError.anotherUserAlreadyLoggedIn }
+                self.login(userData.userId, on: connectionId)
+                interactor.sendMessage.onNext((connectionId, .loginResponseSuccess(userData: userData)))
             }.catch {
-                interactor.sendMessage.onNext((connectionId, .loginResponseError(error: $0)))
+                interactor.sendMessage.onNext((connectionId, .loginResponseError(error: $0.localizedDescription)))
             }
+            
         }.disposed(by: disposeBag)
     
-    /*
-        guard uidVsCon[connectionId] != userId else {
-            throw SessionManagerError.UserAlreadyLoggedIn
-        }
-        
-        guard uidVsCon[connectionId] == kNoUserId else {
-            throw SessionManagerError.AnotherUserAlreadyLoggedIn
-        }
-        
-        guard uidVsCon.values.first(where:{$0 == userId}) == nil else {
-            throw SessionManagerError.UserAlreadyLoggedInOnOtherConnection
-        }
-        
-        threadSafe.performAsyncBarrier { [weak self] in
-            self?.userIdForConnectionId[connectionId] = userId
-        }
-        
-        // Notify client
-        let message = ["LoginResponse":["user":["userId":user.userId, "userName":user.name, "color":user.color]]]
-        
-        server?.send(to:connectionId, message:message)
-        
-        // Send event
-        self.userLoginEvent.raise(with: userId)
-        */
-        
-        /*
-        
-        
-        
-        interactor.onMessage.bind { connectionId, message in
+        interactor.onMessage.bind { [weak self] connectionId, message in
+            guard let self = self else { return }
             guard case .logout(let userName) = message else { return }
+
             firstly {
-                try self.logout(with: userName)
-                interactor.sendMessage.onNext((connectionId, .loginUserResponseSuccess(userData: userData)))
-            } catch {
-                interactor.sendMessage.onNext((connectionId, .loginUserResponseError(error: error.localizedDescription)))
+                self.database.userData(with: userName)
+            }.map { userData in
+                guard self.isLoggedIn(userData.userId) else { throw SessionManagerError.userIsNotLoggedIn }
+                guard self.isSessionEstablished(for: connectionId) else { throw SessionManagerError.noSessionForConnection }
+                guard self.userId(for: connectionId) == userData.userId else { throw SessionManagerError.invalidUserIdForLogout }
+                self.logout(userData.userId, on: connectionId)
+                interactor.sendMessage.onNext((connectionId, .logoutResponseSuccess(userData: userData)))
+            }.catch {
+                interactor.sendMessage.onNext((connectionId, .logoutResponseError(error: $0.localizedDescription)))
             }
-            }.disposed(by: disposeBag)
+            
+        }.disposed(by: disposeBag)
         
-        interactor.loginStatusProvider = self
-         */
+        interactor.onConnectionClosed.bind { [weak self] connectionId in
+            self?.connectionClosed(with: connectionId)
+        }.disposed(by: disposeBag)
         
         return interactor
     }
 }
-
-
-
-/*
-UIApplication.shared.isNetworkActivityIndicatorVisible = true
-
-let fetchImage = URLSession.shared.dataTask(.promise, with: url).compactMap{ UIImage(data: $0.data) }
-let fetchLocation = CLLocationManager.requestLocation().lastValue
-
-firstly {
-    when(fulfilled: fetchImage, fetchLocation)
-    }.done { image, location in
-        self.imageView.image = image
-        self.label.text = "\(location)"
-    }.ensure {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = false
-    }.catch { error in
-        self.show(UIAlertController(for: error), sender: self)
-}
-*/
