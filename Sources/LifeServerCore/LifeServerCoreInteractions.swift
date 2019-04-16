@@ -23,14 +23,15 @@ extension LifeServerCore {
     open class Interactor {
     }
 
-    open func assembleInteractions() -> LifeServerCore.Interactor {
+    open func assembleInteractions() {
         let serverInteractor = server.assembleInteractions(disposeBag: disposeBag)
         let sessionManagerInteractor = sessionManager.assembleInteractions(disposeBag: disposeBag)
         let usersManagerInteractor = usersManager.assembleInteractions(disposeBag: disposeBag)
         let gameplayInteractor = gameplay.assembleInteractions(disposeBag: disposeBag)
         let chatInteractor = chat.assembleInteractions(disposeBag: disposeBag)
 
-        serverInteractor.onMessage.bind { connectionId, data in
+        serverInteractor.onMessage.bind { [weak self] connectionId, data in
+            guard let self = self else { return }
             // TODO: Think about json or incoming message validation before using it
             
             if let sessionManagerMessage = try? JSONDecoder().decode(SessionManagerMessage.self, from: data) {
@@ -43,7 +44,7 @@ extension LifeServerCore {
                 return
             }
 
-            guard let userId = sessionManager.sessionInfo(for: connectionId)?.userId else { return }
+            guard let userId = self.sessionManager.sessionInfo(for: connectionId)?.userId else { return }
 
             if let gameplayMessage = try? JSONDecoder().decode(GameplayMessage.self, from: data) {
                 gameplayInteractor.onMessage.onNext((userId, gameplayMessage))
@@ -64,28 +65,31 @@ extension LifeServerCore {
             .bind(to: sessionManagerInteractor.onConnectionClosed)
             .disposed(by: disposeBag)
 
-        sessionManagerInteractor.sendMessage.bind { connectionId, message in
-            guard let data = try? JSONEncoder().encode(message) else { return }
-            serverInteractor.sendMessage.onNext((connectionId, data))
-        }.disposed(by: disposeBag)
+        sessionManagerInteractor.sendMessage
+            .map { ($0, try JSONEncoder().encode($1)) }
+            .bind(onNext: server.send)
+            .disposed(by: disposeBag)
 
         usersManagerInteractor.sendMessage
-            .map { connectionId, message in .just(connectionId, try JSONEncoder().encode(message)) }
-            .bind(to: server.sendMessage)
+            .map { ($0, try JSONEncoder().encode($1)) }
+            .bind(onNext: server.send)
             .disposed(by: disposeBag)
         
-        gameplayInteractor.sendMessage.bind { userId, message in
-            guard let connectionId = sessionManagerInteractor.loginStatusProvider?.connectionId(for: userId) else { return }
-            guard let data = try? JSONEncoder().encode(message) else { return }
-            serverInteractor.sendMessage.onNext((connectionId, data))
-        }.disposed(by: disposeBag)
+        gameplayInteractor.sendMessage
+            .map { ($0, try JSONEncoder().encode($1)) }
+            .bind { [weak self] userId, data in
+                guard let connectionId = self?.sessionManager.sessionInfo(for: userId)?.connectionId else { return }
+                self?.server.send(for: connectionId, data)
+            }.disposed(by: disposeBag)
 
-        chatInteractor.sendMessage.bind { userId, message in
-            guard let connectionId = sessionManagerInteractor.loginStatusProvider?.connectionId(for: userId) else { return }
-            guard let data = try? JSONEncoder().encode(message) else { return }
-            serverInteractor.sendMessage.onNext((connectionId, data))
-        }.disposed(by: disposeBag)
+        chatInteractor.sendMessage
+            .map { ($0, try JSONEncoder().encode($1)) }
+            .bind { [weak self] userId, data in
+                guard let connectionId = self?.sessionManager.sessionInfo(for: userId)?.connectionId else { return }
+                self?.server.send(for: connectionId, data)
+            }.disposed(by: disposeBag)
 
+        /*
         chatInteractor.getLoginStatus = { [weak sessionManagerInteractor] userId in
             return sessionManagerInteractor?.loginStatusProvider?.loginStatus(for: userId) ?? false
         }
@@ -93,13 +97,10 @@ extension LifeServerCore {
         chatInteractor.getUserData = { [weak usersManagerInteractor] userId in
             return usersManagerInteractor?.userDataProvider?.userData(for: userId)
         }
-
-        let lifeServerCoreInteractor = LifeServerCore.Interactor()
-
-        return lifeServerCoreInteractor
+         */
     }
     
-    public func runServer(host: String, port: Int) {
-        server.runServer(host, port)
+    public func runServer(host: String, port: Int) throws {
+        try server.runServer(host: host, port: port)
     }
 }

@@ -18,8 +18,38 @@
 import Foundation
 import LifeServerCore
 
-// TODO: Make assembleInteractions internally called
 let lifeServer = LifeServerCore()
-let lifeServerInteractor = lifeServer.assembleInteractions()
-lifeServerInteractor.runServer("127.0.0.1", 1337)
+
+var args = ArraySlice(CommandLine.arguments)
+
+func usage() {
+    print(
+    """
+        Usage: life-server host port
+
+            OPTIONS:
+                host: Host name or IP
+                port: Listening port number
+    """)
+}
+
+let arg1 = args.dropFirst().first
+let arg2 = args.dropFirst(2).first
+
+guard let host = arg1 else {
+    usage()
+    exit(1)
+}
+guard let port = arg2.flatMap(Int.init) else {
+    usage()
+    exit(1)
+}
+
+do {
+    try lifeServer.runServer(host: host, port: port)
+} catch {
+    print("Failed to start server: \(error)")
+    exit(1)
+}
+
 dispatchMain()

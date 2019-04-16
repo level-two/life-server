@@ -40,9 +40,13 @@ extension ChatMessage {
         case count
     }
 
+    private enum DecodeError: Error {
+        case noValidKeys
+    }
+    
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        guard let key = container.allKeys.first else { throw "No valid keys in: \(container)" }
+        guard let key = container.allKeys.first else { throw DecodeError.noValidKeys }
         func dec<T: Decodable>() throws -> T { return try container.decode(T.self, forKey: key) }
         func dec<T: Decodable>(_ auxKey: AuxCodingKeys) throws -> T {
             return try container

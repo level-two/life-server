@@ -27,7 +27,7 @@ class SessionManager {
     
     let database: UserDatabase
     let queue = DispatchQueue(label: "life.server.sessionManagerQueue", attributes: .concurrent)
-    var sessions: [SessionInfo]
+    var sessions = [SessionInfo]()
 }
 
 extension SessionManager {
