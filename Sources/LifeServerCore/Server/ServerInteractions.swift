@@ -38,15 +38,16 @@ extension Server {
     }
 
     public func runServer(host: String, port: Int) throws {
-        let bootstrap = makeBootstrap() { [unowned self] channel in
-            let connectionId = channel.connectionId
+        let bootstrap = makeBootstrap() { [weak self] channel in
+            guard let self = self else { return channel.eventLoop.newFailedFuture(error: ServerError.serverDestroyed) }
             
+            let connectionId = channel.connectionId
             self.storeConnection(channel, with: connectionId)
             self.onConnectionEstablished.onNext(connectionId)
             
             _ = channel.closeFuture.map { _ in
-                self.removeConnection(with: connectionId)
                 self.onConnectionClosed.onNext(connectionId)
+                self.removeConnection(with: connectionId)
             }
             
             let bridge = BridgeChannelHandler()

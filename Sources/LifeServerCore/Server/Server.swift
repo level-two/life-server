@@ -22,6 +22,7 @@ import RxCocoa
 
 class Server {
     public enum ServerError: Error {
+        case serverDestroyed
         case addressBindError
     }
 
