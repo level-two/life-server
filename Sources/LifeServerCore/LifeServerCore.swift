@@ -21,8 +21,9 @@ import RxCocoa
 
 open class LifeServerCore {
     let server = Server()
-    let sessionManager = SessionManager()
-    let usersManager = UsersManager()
+    let database = DatabaseManager()
+    let sessionManager = SessionManager(database: database)
+    let usersManager = UsersManager(database: database)
     let gameplay = Gameplay()
     let chat = Chat()
 

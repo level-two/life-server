@@ -21,6 +21,15 @@ import RxSwift
 import RxCocoa
 
 class Server {
+    public enum ServerError: Error {
+        case addressBindError
+    }
+
+    let onConnectionEstablished = PublishSubject<ConnectionId>()
+    let onConnectionClosed = PublishSubject<ConnectionId>()
+    let onMessage = PublishSubject<(ConnectionId, Data)>()
+    var listenChannel: Channel?
+    
     deinit {
         // Close all opened sockets...
         do {
@@ -30,11 +39,21 @@ class Server {
             print("Failed to gracefully shut down server: \(error)")
         }
     }
+    
+    fileprivate var connections = [ConnectionId: Channel]()
+    fileprivate let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+    fileprivate let queue = DispatchQueue(label: "life.server.serverQueue", attributes: .concurrent)
+}
 
-    var listenChannel: Channel?
-    var connections = [ConnectionId: Channel]()
-    let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+extension Server {
+    public func send(for connectionId: ConnectionId, _ data: Data) {
+        queue.async { [weak self] in
+            self?.connections[connectionId]?.writeAndFlush(NIOAny(data), promise: nil)
+        }
+    }
+}
 
+extension Server {
     func makeBootstrap(with channelInitializer: @escaping (Channel)->EventLoopFuture<Void>) -> ServerBootstrap {
         return ServerBootstrap(group: self.group)
             // Specify backlog and enable SO_REUSEADDR for the server itself
@@ -50,22 +69,14 @@ class Server {
     }
 
     func storeConnection(_ connection: Channel, with connectionId: ConnectionId) {
-        DispatchQueue.main.async { [weak self] in
+        queue.async(flags: .barrier) { [weak self] in
             self?.connections[connectionId] = connection
         }
     }
 
     func removeConnection(with connectionId: ConnectionId) {
-        DispatchQueue.main.async { [weak self] in
+        queue.async(flags: .barrier) { [weak self] in
             self?.connections.removeValue(forKey: connectionId)
-        }
-    }
-}
-
-extension Server {
-    func send(_ data: Data, for connectionId: ConnectionId) {
-        DispatchQueue.main.async { [weak self] in
-            self?.connections[connectionId]?.writeAndFlush(NIOAny(data), promise: nil)
         }
     }
 }

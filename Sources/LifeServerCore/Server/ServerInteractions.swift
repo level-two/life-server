@@ -23,46 +23,45 @@ import RxCocoa
 extension Server {
     public class Interactor {
         let onConnectionEstablished = PublishSubject<ConnectionId>()
-        let onConnectionClosed      = PublishSubject<ConnectionId>()
-        let onMessage               = PublishSubject<(ConnectionId, Data)>()
+        let onConnectionClosed = PublishSubject<ConnectionId>()
+        let onMessage = PublishSubject<(ConnectionId, Data)>()
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> Server.Interactor {
         let serverInteractor = Server.Interactor()
 
-        serverInteractor.sendMessage
-            .observeOn(MainScheduler.instance)
-            .bind { [weak self] connectionId, data in self?.send(data, for: connectionId) }
-            .disposed(by: disposeBag)
-
-        }
+        serverInteractor.onConnectionEstablished.bind(to: onConnectionEstablished).disposed(by: disposeBag)
+        serverInteractor.onConnectionClosed.bind(to: onConnectionClosed).disposed(by: disposeBag)
+        serverInteractor.onMessage.bind(to: onMessage).disposed(by: disposeBag)
 
         return serverInteractor
     }
 
-    public func runServer(host: String, port: Int) {
-        let bootstrap = makeBootstrap() { [weak self] channel in
+    public func runServer(host: String, port: Int) throws {
+        let bootstrap = makeBootstrap() { [unowned self] channel in
             let connectionId = channel.connectionId
             
-            self?.storeConnection(channel, with: connectionId)
-            serverInteractor?.onConnectionEstablished.onNext(connectionId)
+            self.storeConnection(channel, with: connectionId)
+            self.onConnectionEstablished.onNext(connectionId)
             
-            _ = channel.closeFuture.map { [weak self, weak serverInteractor] _ in
-                self?.removeConnection(with: connectionId)
-                serverInteractor?.onConnectionClosed.onNext(connectionId)
+            _ = channel.closeFuture.map { _ in
+                self.removeConnection(with: connectionId)
+                self.onConnectionClosed.onNext(connectionId)
             }
             
             let bridge = BridgeChannelHandler()
             bridge.onMessage
-                .bind { [weak serverInteractor] message in serverInteractor?.onMessage.onNext((connectionId, message)) }
+                .map { (connectionId, $0) }
+                .bind(to: self.onMessage)
                 .disposed(by: bridge.disposeBag)
             
             return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
         }
         
-        self.listenChannel = try? bootstrap.bind(host: host, port: port).wait()
-        guard let localAddress = self.listenChannel?.localAddress else {
-            fatalError("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")
+        listenChannel = try bootstrap.bind(host: host, port: port).wait()
+        guard let localAddress = listenChannel?.localAddress else {
+            print("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")
+            throw ServerError.addressBindError
         }
         
         print("Server started and listening on \(localAddress)")

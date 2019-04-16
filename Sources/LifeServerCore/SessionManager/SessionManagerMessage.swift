@@ -35,10 +35,14 @@ extension SessionManagerMessage {
         case logoutResponseSuccess
         case logoutResponseError
     }
+    
+    private enum DecodeError: Error {
+        case noValidKeys
+    }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        guard let key = container.allKeys.first else { throw "No valid keys in: \(container)" }
+        guard let key = container.allKeys.first else { throw DecodeError.noValidKeys }
         func dec<T: Decodable>() throws -> T { return try container.decode(T.self, forKey: key) }
         switch key {
         case .login: self = try .login(userName: dec())

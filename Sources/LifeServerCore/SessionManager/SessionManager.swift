@@ -26,7 +26,7 @@ class SessionManager {
     }
     
     let database: UserDatabase
-    let queue = DispatchQueue(label: "life.server.session.manager", attributes: .concurrent)
+    let queue = DispatchQueue(label: "life.server.sessionManagerQueue", attributes: .concurrent)
     var sessions: [SessionInfo]
 }
 
