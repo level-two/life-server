@@ -18,6 +18,7 @@
 import Foundation
 import RxSwift
 import RxCocoa
+import PromiseKit
 
 extension UsersManager {
     public class Interactor {
@@ -32,18 +33,15 @@ extension UsersManager {
             guard let self = self else { return }
             guard case .createUser(let userName, let color) = message else { return }
             
-            self.database.numberOfRegisteredUsers()
-                .chained { lastUserId -> Future<UserData> in
-                    let userData = UserData(userId: lastUserId+1, userName: userName, color: color)
-                    return self.database.store(userData: userData)
-                }.observe { result in
-                    switch result {
-                    case .error(let error):
-                        interactor.sendMessage.onNext((connectionId, .createUserError(error: error.localizedDescription)))
-                    case .value(let userData):
-                        interactor.sendMessage.onNext((connectionId, .createUserSuccess(userData: userData)))
-                    }
-                }
+            firstly {
+                self.database.numberOfRegisteredUsers()
+            }.then {
+                self.database.store(userData: .init(userId: $0 + 1, userName: userName, color: color))
+            }.map {
+                interactor.sendMessage.onNext((connectionId, .createUserSuccess(userData: $0)))
+            }.catch {
+                interactor.sendMessage.onNext((connectionId, .createUserError(error: $0.localizedDescription)))
+            }
         }.disposed(by: disposeBag)
         
         return interactor
