@@ -32,15 +32,16 @@ extension Chat {
         
         interactor.onMessage.bind { [weak self] connectionId, message in
             guard let self = self else { return }
-            guard case .sendChatMessage(let chatMessage) = message else { return }
+            guard case .sendChatMessage(let text) = message else { return }
             
             firstly {
+                self.chatDatabase.numberOfStoredMessages()
+            }.map {
                 guard let userId = self.sessionInfoProvider.userId(for: connectionId) else { throw ChatError.notLoggedIn }
-                return userId
+                return ($0, userId)
             }.then {
-                self.userInfoProvider.userData(for: $0)
-            }.then {
-                 self.chatDatabase.store($0)
+                let chatMessage = ChatMessageData(messageId: $0, userId: $1, text: text)
+                self.chatDatabase.store(chatMessage)
             }.map {
                 interactor.broadcastMessage.onNext(.chatMessage(userData: $0))
             }.catch {

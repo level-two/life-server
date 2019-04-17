@@ -34,6 +34,20 @@ class DatabaseManager {
         let color = Column("color", Int32.self)
     }
     
+    class Chat: Table {
+        enum Field: String {
+            case messageId = "messageId"
+            case userId = "userId"
+            case text = "text"
+        }
+        
+        let tableName = "Chat"
+        let messageId = Column("messageId", Int32.self, primaryKey: true, unique: true)
+        let userId = Column("userId", Int32.self)
+        let text = Column("text", String.self)
+    }
+    
+    
     init(with databaseUrl: URL = URL.applicationSupportDirectory.appendingPathComponent("LifeServer/database.db")) {
         let needInitDb = !FileManager.default.fileExists(atPath: databaseUrl.path)
         
@@ -156,10 +170,48 @@ extension DatabaseManager {
 
 
 extension DatabaseManager: ChatDatabase {
-    func createChatTable() {
-        //CREATE TABLE CHAT(messageId integer PRIMARY KEY, userId integer, userName text, message text);
+    @discardableResult
+    public func store(chatMessageData: ChatMessageData) -> Promise<ChatMessageData> {
+        let schema = Chat()
+        let query = Insert(into: schema, values: [chatMessageData.messageId, chatMessageData.userId, chatMessageData.text])
+        return .init() { promise in
+            connection.execute(query: query) { result in
+                if case .error(let err) = result {
+                    promise.reject(err)
+                } else {
+                    promise.fulfill(chatMessageData)
+                }
+            }
+        }
     }
+    
+    public func numberOfStoredMessages() -> Promise<Int> {
+        let query = "SELECT COUNT(messageId) FROM CHAT"
+        
+        return .init() { promise in
+            connection.execute(query) { result in
+                guard
+                    let row = result.asRows?.first,
+                    let count = row.first?.value as? Int32
+                    else { fatalError("Failed to get number of stored messages") }
+                promise.fulfill(Int(count))
+            }
+        }
+    }
+    
+    
     // SELECT * FROM CHAT WHERE CHAT.messageId between 4 and 5;
+}
+
+extension DatabaseManager {
+    func createChatTable() {
+        let createTableQuery = "CREATE TABLE CHAT(messageId integer PRIMARY KEY, userId integer, text text)"
+        connection.execute(createTableQuery) { queryResult in
+            if let error = queryResult.asError {
+                fatalError("Failed to create CHAT table: \(error)")
+            }
+        }
+    }
 }
 
 extension Color {

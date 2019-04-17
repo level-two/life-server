@@ -28,5 +28,6 @@ protocol UserDatabase: class {
 }
 
 protocol ChatDatabase: class {
-    // TBD
+    func store(chatMessageData: ChatMessageData) -> Promise<ChatMessageData>
+    func numberOfStoredMessages() -> Promise<Int>
 }
