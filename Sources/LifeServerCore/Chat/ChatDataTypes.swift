@@ -18,7 +18,7 @@
 import Foundation
 
 struct ChatMessageData: Codable {
-    let user: UserData
+    let userId: UserId
     let message: String
     let id: Int
 }

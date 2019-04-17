@@ -73,7 +73,7 @@ extension SessionManager {
             }.map { userData in
                 guard self.isLoggedIn(userData.userId) else { throw SessionManagerError.userIsNotLoggedIn }
                 guard self.isLoggedIn(on: connectionId) else { throw SessionManagerError.noSessionForConnection }
-                guard self.sessionInfo(for: connectionId)?.userId == userData.userId else { throw SessionManagerError.invalidUserIdForLogout }
+                guard self.userId(for: connectionId) == userData.userId else { throw SessionManagerError.invalidUserIdForLogout }
                 self.logout(userData.userId, on: connectionId)
                 interactor.sendMessage.onNext((connectionId, .logoutResponseSuccess(userData: userData)))
             }.catch {

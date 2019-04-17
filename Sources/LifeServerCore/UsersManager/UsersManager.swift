@@ -20,6 +20,12 @@ import RxSwift
 import RxCocoa
 import SwiftKuery
 import SwiftKuerySQLite
+import PromiseKit
+
+protocol UserInfoProvider {
+    func userData(for userId: UserId) -> Promise<UserData>
+    func userData(for userName: String) -> Promise<UserData>
+}
 
 public class UsersManager {
     init(database: UserDatabase) {
@@ -27,4 +33,14 @@ public class UsersManager {
     }
     
     internal let database: UserDatabase
+}
+
+extension UsersManager: UserInfoProvider {
+    public func userData(for userId: UserId) -> Promise<UserData> {
+        return database.userData(with: userId)
+    }
+    
+    public func userData(for userName: String) -> Promise<UserData> {
+        return database.userData(with: userName)
+    }
 }

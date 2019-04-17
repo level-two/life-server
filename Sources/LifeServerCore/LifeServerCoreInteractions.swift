@@ -44,15 +44,13 @@ extension LifeServerCore {
                 return
             }
 
-            guard let userId = self.sessionManager.sessionInfo(for: connectionId)?.userId else { return }
-
             if let gameplayMessage = try? JSONDecoder().decode(GameplayMessage.self, from: data) {
-                gameplayInteractor.onMessage.onNext((userId, gameplayMessage))
+                gameplayInteractor.onMessage.onNext((connectionId, gameplayMessage))
                 return
             }
 
             if let chatMessage = try? JSONDecoder().decode(ChatMessage.self, from: data) {
-                chatInteractor.onMessage.onNext((userId, chatMessage))
+                chatInteractor.onMessage.onNext((connectionId, chatMessage))
                 return
             }
         }.disposed(by: disposeBag)
@@ -88,16 +86,6 @@ extension LifeServerCore {
                 guard let connectionId = self?.sessionManager.sessionInfo(for: userId)?.connectionId else { return }
                 self?.server.send(for: connectionId, data)
             }.disposed(by: disposeBag)
-
-        /*
-        chatInteractor.getLoginStatus = { [weak sessionManagerInteractor] userId in
-            return sessionManagerInteractor?.loginStatusProvider?.loginStatus(for: userId) ?? false
-        }
-
-        chatInteractor.getUserData = { [weak usersManagerInteractor] userId in
-            return usersManagerInteractor?.userDataProvider?.userData(for: userId)
-        }
-         */
     }
     
     public func runServer(host: String, port: Int) throws {

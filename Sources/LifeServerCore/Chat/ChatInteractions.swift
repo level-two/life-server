@@ -18,28 +18,134 @@
 import Foundation
 import RxSwift
 import RxCocoa
+import PromiseKit
 
 extension Chat {
     public class Interactor {
-        let onMessage = PublishSubject<(UserId, ChatMessage)>()
-        let sendMessage = PublishSubject<(UserId, ChatMessage)>()
-
-        var getLoginStatus: (UserId) -> Bool = { _ in false }
-        var getUserData: (UserId) -> UserData? = { _ in nil }
+        let onMessage = PublishSubject<(ConnectionId, ChatMessage)>()
+        let sendMessage = PublishSubject<(ConnectionId, ChatMessage)>()
+        let broadcastMessage = PublishSubject<ChatMessage>()
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> Chat.Interactor {
-        // internal interactions
-
-        // external interactions
-        let chatInteractor = Interactor()
-
-        chatInteractor.onMessage.bind { message in
-            print(message)
+        let interactor = Interactor()
+        
+        interactor.onMessage.bind { [weak self] connectionId, message in
+            guard let self = self else { return }
+            guard case .sendChatMessage(let chatMessage) = message else { return }
+            
+            firstly {
+                guard let userId = self.sessionInfoProvider.userId(for: connectionId) else { throw ChatError.notLoggedIn }
+                return userId
+            }.then {
+                self.userInfoProvider.userData(for: $0)
+            }.then {
+                 self.chatDatabase.store($0)
+            }.map {
+                interactor.broadcastMessage.onNext(.chatMessage(userData: $0))
+            }.catch {
+                interactor.sendMessage.onNext((connectionId, .chatError(error: $0.localizedDescription)))
+            }
         }.disposed(by: disposeBag)
-
-        // use getUserData and getLoginStatus here
-
-        return chatInteractor
+        
+        /*
+        func processChatMessage(withConnection connectionId:Int, user userId:Int, chatMessage:[String:Any]) {
+            do {
+                guard let user = usersManager?.getUser(withId: userId) else {
+                    throw ChatError.MessageFromAnonymousUser
+                }
+                
+                guard let messageText = chatMessage["message"] as? String else {
+                    throw ChatError.InvalidChatMessage
+                }
+                
+                
+                let messageId = self.lastMessageId
+                self.lastMessageId += 1
+                
+                let chatMessage = ChatMessage(messageId: messageId, message: messageText, user: user)
+                
+                self.recentMessages.append(chatMessage)
+                if self.recentMessages.count > kNumRecentMessages {
+                    self.recentMessages.remove(at: 0)
+                }
+                
+                let message = ["ChatMessage": ["id":messageId, "message":messageText, "user":["userName":user.name, "color":user.color, "userId":user.userId]]]
+                sessionManager?.sendMessageBroadcast(message:message)
+                
+                seiralQueue.async { [weak self] in
+                    do {
+                        try self?.storeMessage(chatMessage: chatMessage)
+                    }
+                    catch {
+                        print("Failed to store message: \(error)")
+                    }
+                }
+            }
+            catch {
+                print("Chat: Failed to process incoming message: \(error)")
+                
+                // Notify client about error
+                // TODO
+                let message = ["ChatMessageError":["error":"Failed to process incoming message: \(error)"]]
+                sessionManager?.sendMessage(connectionId:connectionId, message:message)
+            }
+        }
+        */
+        /*
+        func processChatRecentMessagesRequest(withConnection connectionId:Int, user userId:Int, request: [String:Any]) {
+            var chatMessages: [ChatMessage]?
+            if let fromId = request["fromId"] as? Int {
+                seiralQueue.sync { [weak self] in
+                    guard let strongSelf = self else { return }
+                    chatMessages = try? strongSelf.getMessages(fromId: fromId, count: strongSelf.lastMessageId - fromId)
+                }
+            }
+            else {
+                chatMessages = self.recentMessages
+            }
+            
+            let messagesArray = chatMessages?.map {
+                ["id":$0.messageId, "message":$0.message, "user":["userName":$0.user.name, "color":$0.user.color, "userId":$0.user.userId]]
+            }
+            let message = ["ChatMessagesResponse":["chatHistory":messagesArray]]
+            sessionManager?.sendMessage(connectionId:connectionId, message:message)
+        }
+        
+        func processChatMessagesRequest(withConnection connectionId:Int, user userId:Int, request:[String:Any]) {
+            do {
+                guard
+                    let fromId = request["fromId"] as? Int,
+                    let count = request["count"] as? Int
+                    else {
+                        throw ChatError.InvalidChatMessagesRequest
+                }
+                
+                var chatMessages: [ChatMessage]?
+                
+                seiralQueue.sync { [weak self] in
+                    do {
+                        chatMessages = try self?.getMessages(fromId: fromId, count: count)
+                    }
+                    catch {
+                        print("Failed to get messages: \(error)")
+                    }
+                }
+                
+                let messagesArray = chatMessages?.map { ["id":$0.messageId, "message":$0.message, "user":["userName":$0.user.name, "color":$0.user.color, "userId":$0.user.userId]] }
+                let message = ["ChatMessagesResponse":["chatHistory":messagesArray ?? []]]
+                sessionManager?.sendMessage(connectionId:connectionId, message:message)
+            }
+            catch {
+                print("Chat: Failed to process messages request: \(error)")
+                
+                // Notify client about error
+                let message = ["chatError": "Failed to process incoming message: \(error)"]
+                sessionManager?.sendMessage(connectionId:connectionId, message:message)
+            }
+        }
+        */
+        
+        return interactor
     }
 }

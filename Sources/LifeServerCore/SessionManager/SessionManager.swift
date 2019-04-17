@@ -20,41 +20,52 @@ import RxSwift
 import RxCocoa
 import PromiseKit
 
+protocol SessionInfoProvider {
+    func userId(for connectionId: ConnectionId) -> UserId?
+    func connectionId(for userId: UserId) -> ConnectionId?
+    func isLoggedIn(_ userId: UserId) -> Bool
+}
+
 class SessionManager {
+    fileprivate struct SessionInfo {
+        var userId: UserId?
+        var connectionId: ConnectionId
+    }
+    
     init(database: UserDatabase) {
         self.database = database
     }
     
     let database: UserDatabase
-    let queue = DispatchQueue(label: "life.server.sessionManagerQueue", attributes: .concurrent)
-    var sessions = [SessionInfo]()
+    fileprivate let queue = DispatchQueue(label: "life.server.sessionManagerQueue", attributes: .concurrent)
+    fileprivate var sessions = [SessionInfo]()
 }
 
-extension SessionManager {
-    public func sessionInfo(for connectionId: ConnectionId) -> SessionInfo? {
-        var result: SessionInfo?
+extension SessionManager: SessionInfoProvider {
+    public func userId(for connectionId: ConnectionId) -> UserId? {
+        var result: UserId?
         queue.sync { [weak self] in
-            result = self?.sessions.first { $0.connectionId == connectionId }
+            result = self?.sessions.first{ $0.connectionId == connectionId }?.userId
         }
         return result
     }
     
-    public func sessionInfo(with userId: UserId) -> SessionInfo? {
-        var result: SessionInfo?
+    public func connectionId(for userId: UserId) -> ConnectionId? {
+        var result: ConnectionId?
         queue.sync { [weak self] in
-            result = self?.sessions.first { $0.userId == userId }
+            result = self?.sessions.first{ $0.userId == userId }?.connectionId
         }
         return result
+    }
+    
+    public func isLoggedIn(_ userId: UserId) -> Bool {
+        return sessions.contains{ $0.userId == userId }
     }
 }
 
 extension SessionManager {
     func isLoggedIn(on connectionId: ConnectionId) -> Bool {
-        return sessionInfo(for: connectionId)?.userId != nil
-    }
-    
-    public func isLoggedIn(_ userId: UserId) -> Bool {
-        return sessionInfo(with: userId) != nil
+        return userId(for: connectionId)? != nil
     }
     
     func login(_ userId: UserId, on connectionId: ConnectionId) {

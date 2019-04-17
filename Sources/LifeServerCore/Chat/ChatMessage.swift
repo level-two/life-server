@@ -19,23 +19,25 @@ import Foundation
 
 enum ChatMessage: Codable {
     case sendChatMessage(message: String)
-    case getChatMessages(fromId: Int?, count: Int?)
+    case chatHistoryRequest(fromId: Int, count: Int)
+    
     case chatMessage(message: ChatMessageData)
-    case chatMessages(messages: [ChatMessageData]?, error: String?)
+    case chatError(error: String)
+    case chatHistoryResponse(messages: [ChatMessageData])
+    case chatHistoryError(error: String)
 }
 
 extension ChatMessage {
     private enum CodingKeys: String, CodingKey {
         case sendChatMessage
-        case getChatMessages
+        case chatHistoryRequest
         case chatMessage
-        case chatMessages
+        case chatError
+        case chatHistoryResponse
+        case chatHistoryError
     }
 
     private enum AuxCodingKeys: String, CodingKey {
-        case user
-        case error
-        case messages
         case fromId
         case count
     }
@@ -54,10 +56,12 @@ extension ChatMessage {
                 .decode(T.self, forKey: auxKey)
         }
         switch key {
-        case .sendChatMessage:    self = try .sendChatMessage(message: dec())
-        case .chatMessage:        self = try .chatMessage(message: dec())
-        case .chatMessages:       self = try .chatMessages(messages: dec(.messages), error: dec(.error))
-        case .getChatMessages:    self = try .getChatMessages(fromId: dec(.fromId), count: dec(.count))
+        case .sendChatMessage:     self = try .sendChatMessage(message: dec())
+        case .chatHistoryRequest:  self = try .chatHistoryRequest(fromId: dec(.fromId), count: dec(.count))
+        case .chatMessage:         self = try .chatMessage(message: dec())
+        case .chatError:           self = try .chatError(error: dec())
+        case .chatHistoryResponse: self = try .chatHistoryResponse(messages: dec())
+        case .chatHistoryError:    self = try .chatHistoryError(error: dec())
         }
     }
 
@@ -67,18 +71,18 @@ extension ChatMessage {
         switch self {
         case .sendChatMessage(let message):
             try container.encode(message, forKey: .sendChatMessage)
-        case .chatMessage(let message):
-            try container.encode(message, forKey: .chatMessage)
-        case .chatMessages(let messages, let error):
-            var nestedContainter = container
-                .nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .chatMessages)
-            try nestedContainter.encode(messages, forKey: .messages)
-            try nestedContainter.encode(error, forKey: .error)
-        case .getChatMessages(let fromId, let count):
-            var nestedContainter = container
-                .nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .getChatMessages)
+        case .chatHistoryRequest(let fromId, let count):
+            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .chatHistoryRequest)
             try nestedContainter.encode(fromId, forKey: .fromId)
             try nestedContainter.encode(count, forKey: .count)
+        case .chatMessage(let message):
+            try container.encode(message, forKey: .chatMessage)
+        case .chatError(let error):
+            try container.encode(error, forKey: .chatError)
+        case .chatHistoryResponse(let messages):
+            try container.encode(messages, forKey: .chatHistoryResponse)
+        case .chatHistoryError(let error):
+            try container.encode(error, forKey: .chatHistoryError)
         }
     }
 }

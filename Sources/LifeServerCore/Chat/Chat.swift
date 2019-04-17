@@ -20,20 +20,24 @@ import RxSwift
 import RxCocoa
 
 public enum ChatError: Error {
-    case messageFromAnonymousUser
+    case notLoggedIn
     case logFileInvalidHandler
     case invalidChatMessagesRequest
     case invalidChatMessage
 }
 
 class Chat {
-    init() {
+    init(userInfoProvider: UserInfoProvider, sessionInfoProvider: SessionInfoProvider, chatDatabase: ChatDatabase) {
+        self.userInfoProvider = userInfoProvider
+        self.sessionInfoProvider = sessionInfoProvider
+        self.chatDatabase = chatDatabase
     }
 
-    /*
-    weak var sessionManager: SessionManager?
-    weak var usersManager: UsersManager?
+    let userInfoProvider: UserInfoProvider
+    let sessionInfoProvider: SessionInfoProvider
+    let chatDatabase: ChatDatabase
     
+    /*
     var seiralQueue = DispatchQueue(label: "com.yauheni-lychkouski.life-server.chatSerialQueue")
     
     var recentMessages: [ChatMessage]
@@ -64,10 +68,6 @@ class Chat {
         // Open log and index fiels for update
         self.logFileHandle = try FileHandle(forUpdating: logFileUrl)
         self.logIndexFileHandle = try FileHandle(forUpdating: logIndexFileUrl)
-        
-        self.sessionManager?.userLoginEvent.addHandler(target: self, handler: Chat.userLoggedIn)
-        self.sessionManager?.userLogoutEvent.addHandler(target: self, handler: Chat.userLoggedOut)
-        self.sessionManager?.messageEvent.addHandler(target: self, handler: Chat.gotMessage)
         
         // Load recent messages and messages index
         var logIndexFileData = logIndexFileHandle.readDataToEndOfFile()
@@ -116,101 +116,6 @@ class Chat {
         
     }
     
-    func processChatMessage(withConnection connectionId:Int, user userId:Int, chatMessage:[String:Any]) {
-        do {
-            guard let user = usersManager?.getUser(withId: userId) else {
-                throw ChatError.MessageFromAnonymousUser
-            }
-            
-            guard let messageText = chatMessage["message"] as? String else {
-                throw ChatError.InvalidChatMessage
-            }
-                
-            
-            let messageId = self.lastMessageId
-            self.lastMessageId += 1
-            
-            let chatMessage = ChatMessage(messageId: messageId, message: messageText, user: user)
-            
-            self.recentMessages.append(chatMessage)
-            if self.recentMessages.count > kNumRecentMessages {
-                self.recentMessages.remove(at: 0)
-            }
-            
-            let message = ["ChatMessage": ["id":messageId, "message":messageText, "user":["userName":user.name, "color":user.color, "userId":user.userId]]]
-            sessionManager?.sendMessageBroadcast(message:message)
-            
-            seiralQueue.async { [weak self] in
-                do {
-                    try self?.storeMessage(chatMessage: chatMessage)
-                }
-                catch {
-                    print("Failed to store message: \(error)")
-                }
-            }
-        }
-        catch {
-            print("Chat: Failed to process incoming message: \(error)")
-            
-            // Notify client about error
-            // TODO
-            let message = ["ChatMessageError":["error":"Failed to process incoming message: \(error)"]]
-            sessionManager?.sendMessage(connectionId:connectionId, message:message)
-        }
-    }
-    
-    func processChatRecentMessagesRequest(withConnection connectionId:Int, user userId:Int, request: [String:Any]) {
-        var chatMessages: [ChatMessage]?
-        if let fromId = request["fromId"] as? Int {
-            seiralQueue.sync { [weak self] in
-                guard let strongSelf = self else { return }
-                chatMessages = try? strongSelf.getMessages(fromId: fromId, count: strongSelf.lastMessageId - fromId)
-            }
-        }
-        else {
-            chatMessages = self.recentMessages
-        }
-        
-        let messagesArray = chatMessages?.map {
-            ["id":$0.messageId, "message":$0.message, "user":["userName":$0.user.name, "color":$0.user.color, "userId":$0.user.userId]]
-        }
-        let message = ["ChatMessagesResponse":["chatHistory":messagesArray]]
-        sessionManager?.sendMessage(connectionId:connectionId, message:message)
-    }
-    
-    func processChatMessagesRequest(withConnection connectionId:Int, user userId:Int, request:[String:Any]) {
-        do {
-            guard
-                let fromId = request["fromId"] as? Int,
-                let count = request["count"] as? Int
-                else {
-                    throw ChatError.InvalidChatMessagesRequest
-            }
-                
-            var chatMessages: [ChatMessage]?
-            
-            seiralQueue.sync { [weak self] in
-                do {
-                    chatMessages = try self?.getMessages(fromId: fromId, count: count)
-                }
-                catch {
-                    print("Failed to get messages: \(error)")
-                }
-            }
-            
-            let messagesArray = chatMessages?.map { ["id":$0.messageId, "message":$0.message, "user":["userName":$0.user.name, "color":$0.user.color, "userId":$0.user.userId]] }
-            let message = ["ChatMessagesResponse":["chatHistory":messagesArray ?? []]]
-            sessionManager?.sendMessage(connectionId:connectionId, message:message)
-        }
-        catch {
-            print("Chat: Failed to process messages request: \(error)")
-            
-            // Notify client about error
-            let message = ["chatError": "Failed to process incoming message: \(error)"]
-            sessionManager?.sendMessage(connectionId:connectionId, message:message)
-        }
-    }
-    
     func storeMessage(chatMessage:ChatMessage) throws {
         let logFileSize = self.logFileHandle.offsetInFile
         var index = Int(logFileSize)
@@ -255,5 +160,5 @@ class Chat {
 
         return result
     }
-    */
+ */
 }
