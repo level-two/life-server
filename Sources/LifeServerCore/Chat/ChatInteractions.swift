@@ -36,18 +36,39 @@ extension Chat {
             
             firstly {
                 self.chatDatabase.numberOfStoredMessages()
-            }.map {
+            }.map { numberOfMessages throws in
                 guard let userId = self.sessionInfoProvider.userId(for: connectionId) else { throw ChatError.notLoggedIn }
-                return ($0, userId)
-            }.then {
-                let chatMessage = ChatMessageData(messageId: $0, userId: $1, text: text)
-                self.chatDatabase.store(chatMessage)
+                return (numberOfMessages, userId)
+            }.then { numberOfMessages, userId in
+                self.chatDatabase.store(chatMessageData: .init(messageId: numberOfMessages, userId: userId, text: text))
             }.map {
-                interactor.broadcastMessage.onNext(.chatMessage(userData: $0))
+                interactor.broadcastMessage.onNext(.chatMessage(message: $0))
             }.catch {
                 interactor.sendMessage.onNext((connectionId, .chatError(error: $0.localizedDescription)))
             }
         }.disposed(by: disposeBag)
+        
+        
+        interactor.onMessage.bind { [weak self] connectionId, message in
+            guard let self = self else { return }
+            guard case .chatHistoryRequest(let fromId, let count) = message else { return }
+            
+            firstly {
+                self.chatDatabase.numberOfStoredMessages()
+            }.map { numberOfMessages throws in
+                guard let userId = self.sessionInfoProvider.userId(for: connectionId) else { throw ChatError.notLoggedIn }
+                return (numberOfMessages, userId)
+            }.then { numberOfMessages, userId in
+                self.chatDatabase.store(chatMessageData: .init(messageId: numberOfMessages, userId: userId, text: text))
+            }.map {
+                interactor.broadcastMessage.onNext(.chatMessage(message: $0))
+            }.catch {
+                interactor.sendMessage.onNext((connectionId, .chatError(error: $0.localizedDescription)))
+            }
+        }.disposed(by: disposeBag)
+        
+        
+        
         
         /*
         func processChatMessage(withConnection connectionId:Int, user userId:Int, chatMessage:[String:Any]) {
