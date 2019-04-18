@@ -1,0 +1,70 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "LoggerAPI",
+        "repositoryURL": "https://github.com/IBM-Swift/LoggerAPI.git",
+        "state": {
+          "branch": null,
+          "revision": "e29073bb7cecf3673e56bcb16180e8fd0cb091f6",
+          "version": "1.8.1"
+        }
+      },
+      {
+        "package": "PromiseKit",
+        "repositoryURL": "https://github.com/mxcl/PromiseKit.git",
+        "state": {
+          "branch": null,
+          "revision": "fe1e9c5b62465227cceb7b0e6e79489ba7b824af",
+          "version": "6.8.4"
+        }
+      },
+      {
+        "package": "RxSwift",
+        "repositoryURL": "https://github.com/ReactiveX/RxSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "cce95dd704bc08cd3d69c087a05a6fc3118e2722",
+          "version": "4.5.0"
+        }
+      },
+      {
+        "package": "SwiftKuery",
+        "repositoryURL": "https://github.com/IBM-Swift/Swift-Kuery.git",
+        "state": {
+          "branch": null,
+          "revision": "de890f1eb5e483961dcaf806467cb2770399efa1",
+          "version": "2.0.0"
+        }
+      },
+      {
+        "package": "SwiftKuerySQLite",
+        "repositoryURL": "https://github.com/IBM-Swift/Swift-Kuery-SQLite.git",
+        "state": {
+          "branch": null,
+          "revision": "a7cc824071cc7b48f8a18f3107d314c3c2905848",
+          "version": "1.1.0"
+        }
+      },
+      {
+        "package": "swift-nio",
+        "repositoryURL": "https://github.com/apple/swift-nio.git",
+        "state": {
+          "branch": null,
+          "revision": "ba7970fe396e8198b84c6c1b44b38a1d4e2eb6bd",
+          "version": "1.14.1"
+        }
+      },
+      {
+        "package": "swift-nio-zlib-support",
+        "repositoryURL": "https://github.com/apple/swift-nio-zlib-support.git",
+        "state": {
+          "branch": null,
+          "revision": "37760e9a52030bb9011972c5213c3350fa9d41fd",
+          "version": "1.0.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
