@@ -29,11 +29,11 @@ extension Chat {
 
     public func assembleInteractions(disposeBag: DisposeBag) -> Chat.Interactor {
         let interactor = Interactor()
-        
+
         interactor.onMessage.bind { [weak self] connectionId, message in
             guard let self = self else { return }
             guard case .sendChatMessage(let text) = message else { return }
-            
+
             firstly {
                 self.chatDatabase.numberOfStoredMessages()
             }.map { numberOfMessages throws in
@@ -47,13 +47,11 @@ extension Chat {
                 interactor.sendMessage.onNext((connectionId, .chatError(error: $0.localizedDescription)))
             }
         }.disposed(by: disposeBag)
-        
-        
+
         interactor.onMessage.bind { [weak self] connectionId, message in
             guard let self = self else { return }
             guard case .chatHistoryRequest(let fromId, let count) = message else { return }
-            
-            
+
             // TBI!
             firstly {
                 chatDatabase.getMessages(fromId: fromId, toId: fromId+count-1)
@@ -63,10 +61,7 @@ extension Chat {
                 interactor.sendMessage.onNext((connectionId, .chatHistoryError(error: $0.localizedDescription)))
             }
         }.disposed(by: disposeBag)
-        
-        
-        
-        
+
         /*
         func processChatMessage(withConnection connectionId:Int, user userId:Int, chatMessage:[String:Any]) {
             do {
@@ -164,7 +159,7 @@ extension Chat {
             }
         }
         */
-        
+
         return interactor
     }
 }

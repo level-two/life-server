@@ -38,7 +38,7 @@ extension UsersManagerMessage {
     private enum DecodeError: Error {
         case noValidKeys
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         guard let key = container.allKeys.first else { throw DecodeError.noValidKeys }

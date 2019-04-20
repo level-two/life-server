@@ -31,7 +31,7 @@ public class UsersManager {
     init(database: UserDatabase) {
         self.database = database
     }
-    
+
     internal let database: UserDatabase
 }
 
@@ -39,7 +39,7 @@ extension UsersManager: UserInfoProvider {
     public func userData(for userId: UserId) -> Promise<UserData> {
         return database.userData(with: userId)
     }
-    
+
     public func userData(for userName: String) -> Promise<UserData> {
         return database.userData(with: userName)
     }

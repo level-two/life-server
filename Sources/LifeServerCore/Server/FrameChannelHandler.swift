@@ -21,8 +21,8 @@ import NIO
 final class FrameChannelHandler: ChannelInboundHandler {
     public typealias InboundIn = ByteBuffer
     public typealias InboundOut = Data
-    
-    public enum FrameError : Error {
+
+    public enum FrameError: Error {
         case unableGetDataChunk
         case messageToDataFailed
     }

@@ -30,7 +30,7 @@ class Server {
     let onConnectionClosed = PublishSubject<ConnectionId>()
     let onMessage = PublishSubject<(ConnectionId, Data)>()
     var listenChannel: Channel?
-    
+
     deinit {
         // Close all opened sockets...
         do {
@@ -40,7 +40,7 @@ class Server {
             print("Failed to gracefully shut down server: \(error)")
         }
     }
-    
+
     fileprivate var connections = [ConnectionId: Channel]()
     fileprivate let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
     fileprivate let queue = DispatchQueue(label: "life.server.serverQueue", attributes: .concurrent)

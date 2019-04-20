@@ -20,7 +20,7 @@ import Foundation
 enum ChatMessage: Codable {
     case sendChatMessage(message: String)
     case chatHistoryRequest(fromId: Int, count: Int)
-    
+
     case chatMessage(message: ChatMessageData)
     case chatError(error: String)
     case chatHistoryResponse(messages: [ChatMessageData])
@@ -45,7 +45,7 @@ extension ChatMessage {
     private enum DecodeError: Error {
         case noValidKeys
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         guard let key = container.allKeys.first else { throw DecodeError.noValidKeys }

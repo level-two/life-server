@@ -36,7 +36,7 @@ class Chat {
     let userInfoProvider: UserInfoProvider
     let sessionInfoProvider: SessionInfoProvider
     let chatDatabase: ChatDatabase
-    
+
     /*
     var seiralQueue = DispatchQueue(label: "com.yauheni-lychkouski.life-server.chatSerialQueue")
     

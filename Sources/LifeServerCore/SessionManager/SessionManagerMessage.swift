@@ -35,7 +35,7 @@ extension SessionManagerMessage {
         case logoutResponseSuccess
         case logoutResponseError
     }
-    
+
     private enum DecodeError: Error {
         case noValidKeys
     }

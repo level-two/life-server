@@ -31,11 +31,11 @@ class SessionManager {
         var userId: UserId?
         var connectionId: ConnectionId
     }
-    
+
     init(database: UserDatabase) {
         self.database = database
     }
-    
+
     let database: UserDatabase
     fileprivate let queue = DispatchQueue(label: "life.server.sessionManagerQueue", attributes: .concurrent)
     fileprivate var sessions = [SessionInfo]()
@@ -45,21 +45,21 @@ extension SessionManager: SessionInfoProvider {
     public func userId(for connectionId: ConnectionId) -> UserId? {
         var result: UserId?
         queue.sync { [weak self] in
-            result = self?.sessions.first{ $0.connectionId == connectionId }?.userId
+            result = self?.sessions.first { $0.connectionId == connectionId }?.userId
         }
         return result
     }
-    
+
     public func connectionId(for userId: UserId) -> ConnectionId? {
         var result: ConnectionId?
         queue.sync { [weak self] in
-            result = self?.sessions.first{ $0.userId == userId }?.connectionId
+            result = self?.sessions.first { $0.userId == userId }?.connectionId
         }
         return result
     }
-    
+
     public func isLoggedIn(_ userId: UserId) -> Bool {
-        return sessions.contains{ $0.userId == userId }
+        return sessions.contains { $0.userId == userId }
     }
 }
 
@@ -67,33 +67,33 @@ extension SessionManager {
     func isLoggedIn(on connectionId: ConnectionId) -> Bool {
         return userId(for: connectionId) != nil
     }
-    
+
     func login(_ userId: UserId, on connectionId: ConnectionId) {
         queue.async(flags: .barrier) { [weak self] in
             guard let self = self else { return }
-            guard let idx = self.sessions.firstIndex(where:{$0.connectionId == connectionId}) else { fatalError("Info data is expected to exist") }
+            guard let idx = self.sessions.firstIndex(where: {$0.connectionId == connectionId}) else { fatalError("Info data is expected to exist") }
             var sessionInfo = self.sessions[idx]
             sessionInfo.userId = userId
             self.sessions[idx] = sessionInfo
         }
     }
-    
+
     func logout(_ userId: UserId, on connectionId: ConnectionId) {
         queue.async(flags: .barrier) { [weak self] in
             guard let self = self else { return }
-            guard let idx = self.sessions.firstIndex(where:{$0.connectionId == connectionId}) else { fatalError("Info data is expected to exist") }
+            guard let idx = self.sessions.firstIndex(where: {$0.connectionId == connectionId}) else { fatalError("Info data is expected to exist") }
             var sessionInfo = self.sessions[idx]
             sessionInfo.userId = nil
             self.sessions[idx] = sessionInfo
         }
     }
-    
+
     func connectionEstablished(with connectionId: ConnectionId) {
         queue.async(flags: .barrier) { [weak self] in
             self?.sessions.append(.init(userId: nil, connectionId: connectionId))
         }
     }
-    
+
     func connectionClosed(with connectionId: ConnectionId) {
         queue.async(flags: .barrier) { [weak self] in
             self?.sessions.removeAll { $0.connectionId == connectionId }

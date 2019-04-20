@@ -27,39 +27,38 @@ class DatabaseManager {
             case userName = "userName"
             case color = "color"
         }
-        
+
         let tableName = "Users"
         let userId = Column("userId", Int32.self, primaryKey: true, unique: true)
         let userName = Column("userName", String.self, unique: true)
         let color = Column("color", Int32.self)
     }
-    
+
     class Chat: Table {
         enum Field: String {
             case messageId = "messageId"
             case userId = "userId"
             case text = "text"
         }
-        
+
         let tableName = "Chat"
         let messageId = Column("messageId", Int32.self, primaryKey: true, unique: true)
         let userId = Column("userId", Int32.self)
         let text = Column("text", String.self)
     }
-    
-    
+
     init(with databaseUrl: URL = URL.applicationSupportDirectory.appendingPathComponent("LifeServer/database.db")) {
         let needInitDb = !FileManager.default.fileExists(atPath: databaseUrl.path)
-        
+
         self.connection = SQLiteConnection(filename: databaseUrl.path)
-        connection.connect() { error in
+        connection.connect { error in
             guard error == nil else { fatalError("Failed to connect to database: \(error!.localizedDescription)") }
             guard needInitDb else { return }
             createUsersTable()
             createChatTable()
         }
     }
-    
+
     let connection: SQLiteConnection
 }
 
@@ -74,7 +73,7 @@ extension DatabaseManager: UserDatabase {
             }
         }
     }
-    
+
     public func containsUser(with userName: String) -> Promise<Bool> {
         let usersSchema = Users()
         let userQuery = Select(usersSchema.userName, from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
@@ -110,41 +109,41 @@ extension DatabaseManager: UserDatabase {
                 guard let row = queryResult.asRows?.first else {
                     return promise.reject(DatabaseManagerError.noUser)
                 }
-                
+
                 guard
                     let userName = row["userName"] as? String,
                     let colorInt32 = row["color"] as? Int32
                     else { fatalError("Database error. Failed to get row values") }
-                
+
                 let color = Color(from: UInt32(bitPattern: colorInt32))
                 promise.fulfill(UserData(userId: userId, userName: userName, color: color))
             }
         }
     }
-    
+
     public func userData(with userName: String) -> Promise<UserData> {
         let usersSchema = Users()
         let userQuery = Select(from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
         let parameters = ["userNameParam": userName] as [String: Any?]
-        
+
         return .init() { promise in
             connection.execute(query: userQuery, parameters: parameters) { queryResult in
                 guard let row = queryResult.asRows?.first else { return promise.reject(DatabaseManagerError.noUser) }
-                
+
                 guard
                     let userId32 = row["userId"] as? Int32,
                     let colorInt32 = row["color"] as? Int32
                     else { fatalError("Database error. Failed to get row values") }
-                
+
                 let color = Color(from: UInt32(bitPattern: colorInt32))
                 promise.fulfill(UserData(userId: UserId(userId32), userName: userName, color: color))
             }
         }
     }
-    
+
     public func numberOfRegisteredUsers() -> Promise<Int> {
         let countQuery = "SELECT COUNT(userId) FROM USERS"
-        
+
         return .init() { promise in
                 connection.execute(countQuery) { queryResult in
                 guard
@@ -168,7 +167,6 @@ extension DatabaseManager {
     }
 }
 
-
 extension DatabaseManager: ChatDatabase {
     @discardableResult
     public func store(chatMessageData: ChatMessageData) -> Promise<ChatMessageData> {
@@ -184,10 +182,10 @@ extension DatabaseManager: ChatDatabase {
             }
         }
     }
-    
+
     public func numberOfStoredMessages() -> Promise<Int> {
         let query = "SELECT COUNT(messageId) FROM CHAT"
-        
+
         return .init() { promise in
             connection.execute(query) { result in
                 guard
@@ -198,7 +196,7 @@ extension DatabaseManager: ChatDatabase {
             }
         }
     }
-    
+
     public func messages(fromId: Int, toId: Int) -> Promise<[ChatMessageData]> {
         let schema = Chat()
         let query = Select(from: schema).where(schema.messageId.between(Parameter("fromId"), and: Parameter("toId")))
@@ -206,24 +204,24 @@ extension DatabaseManager: ChatDatabase {
 
         return .init() { promise in
             connection.execute(query: query, parameters: parameters) { result in
-                
+
                 // TBI
                 guard let rows = result.asRows? else { return promise.reject(DatabaseManagerError.noMessagesForGivenIds) }
-                
+
                 var messages = [ChatMessageData]()
-                
+
                 rows.map {  }
                 guard
                     let userId32 = row["userId"] as? Int32,
                     let colorInt32 = row["color"] as? Int32
                     else { fatalError("Database error. Failed to get row values") }
-                
+
                 let color = Color(from: UInt32(bitPattern: colorInt32))
                 promise.fulfill(UserData(userId: UserId(userId32), userName: userName, color: color))
             }
         }
     }
-    
+
     // SELECT * FROM CHAT WHERE CHAT.messageId between 4 and 5;
 }
 
@@ -245,12 +243,12 @@ extension Color {
         green = CGFloat((val >> 8) & 0xff) / 0xff
         blue = CGFloat((val >> 0) & 0xff) / 0xff
     }
-    
+
     public var toInt32: Int32 {
         func comp(_ val: CGFloat, _ idx: UInt32) -> UInt32 {
             return UInt32(val * 255) << (idx * 8)
         }
-        
+
         return Int32(bitPattern: comp(alpha, 3) + comp(red, 2) + comp(green, 1) + comp(blue, 0))
     }
 }

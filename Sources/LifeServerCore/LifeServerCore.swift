@@ -30,6 +30,6 @@ open class LifeServerCore {
     public init() {
         assembleInteractions()
     }
-    
+
     let disposeBag = DisposeBag()
 }

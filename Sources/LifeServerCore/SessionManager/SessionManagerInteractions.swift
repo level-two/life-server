@@ -20,7 +20,6 @@ import RxSwift
 import RxCocoa
 import PromiseKit
 
-
 enum SessionManagerError: Int, Error {
     case invalidUserCreateRequest
     case invalidUserLoginRequest
@@ -39,18 +38,18 @@ extension SessionManager {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
         let sendMessage = PublishSubject<(ConnectionId, SessionManagerMessage)>()
-        
+
         let onConnectionEstablished = PublishSubject<ConnectionId>()
         let onConnectionClosed      = PublishSubject<ConnectionId>()
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> SessionManager.Interactor {
         let interactor = Interactor()
-        
+
         interactor.onMessage.bind { [weak self] connectionId, message in
             guard let self = self else { return }
             guard case .login(let userName) = message else { return }
-            
+
             firstly {
                 self.database.userData(with: userName)
             }.map { userData in
@@ -61,9 +60,9 @@ extension SessionManager {
             }.catch {
                 interactor.sendMessage.onNext((connectionId, .loginResponseError(error: $0.localizedDescription)))
             }
-            
+
         }.disposed(by: disposeBag)
-    
+
         interactor.onMessage.bind { [weak self] connectionId, message in
             guard let self = self else { return }
             guard case .logout(let userName) = message else { return }
@@ -80,16 +79,15 @@ extension SessionManager {
                 interactor.sendMessage.onNext((connectionId, .logoutResponseError(error: $0.localizedDescription)))
             }
         }.disposed(by: disposeBag)
-        
-        
+
         interactor.onConnectionEstablished
             .bind { [weak self] connectionId in self?.connectionEstablished(with: connectionId) }
             .disposed(by: disposeBag)
-        
+
         interactor.onConnectionClosed
             .bind { [weak self] connectionId in self?.connectionClosed(with: connectionId) }
             .disposed(by: disposeBag)
-        
+
         return interactor
     }
 }

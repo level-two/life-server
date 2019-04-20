@@ -32,7 +32,7 @@ extension UsersManager {
         interactor.onMessage.bind { [weak self] connectionId, message in
             guard let self = self else { return }
             guard case .createUser(let userName, let color) = message else { return }
-            
+
             firstly {
                 self.database.numberOfRegisteredUsers()
             }.then {
@@ -43,7 +43,7 @@ extension UsersManager {
                 interactor.sendMessage.onNext((connectionId, .createUserError(error: $0.localizedDescription)))
             }
         }.disposed(by: disposeBag)
-        
+
         return interactor
     }
 }
