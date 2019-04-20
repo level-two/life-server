@@ -47,7 +47,7 @@ class DatabaseManager {
         let text = Column("text", String.self)
     }
 
-    init(with databaseUrl: URL = URL.applicationSupportDirectory.appendingPathComponent("LifeServer/database.db")) {
+    init(with databaseUrl: URL) {
         let needInitDb = !FileManager.default.fileExists(atPath: databaseUrl.path)
 
         self.connection = SQLiteConnection(filename: databaseUrl.path)
@@ -168,7 +168,6 @@ extension DatabaseManager {
 }
 
 extension DatabaseManager: ChatDatabase {
-    @discardableResult
     public func store(chatMessageData: ChatMessageData) -> Promise<ChatMessageData> {
         let schema = Chat()
         let query = Insert(into: schema, values: [chatMessageData.messageId, chatMessageData.userId, chatMessageData.text])
@@ -204,25 +203,14 @@ extension DatabaseManager: ChatDatabase {
 
         return .init() { promise in
             connection.execute(query: query, parameters: parameters) { result in
-
-                // TBI
-                guard let rows = result.asRows? else { return promise.reject(DatabaseManagerError.noMessagesForGivenIds) }
-
-                var messages = [ChatMessageData]()
-
-                rows.map {  }
                 guard
-                    let userId32 = row["userId"] as? Int32,
-                    let colorInt32 = row["color"] as? Int32
-                    else { fatalError("Database error. Failed to get row values") }
-
-                let color = Color(from: UInt32(bitPattern: colorInt32))
-                promise.fulfill(UserData(userId: UserId(userId32), userName: userName, color: color))
+                    let rows = result.asRows,
+                    let messages = try? rows.map(ChatMessageData.init)
+                    else { return promise.reject(DatabaseManagerError.failedGetChatMessages) }
+                promise.fulfill(messages)
             }
         }
     }
-
-    // SELECT * FROM CHAT WHERE CHAT.messageId between 4 and 5;
 }
 
 extension DatabaseManager {

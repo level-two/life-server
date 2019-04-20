@@ -18,11 +18,14 @@
 import Foundation
 
 extension URL {
-    public static var applicationSupportDirectory: URL {
+    public static var applicationSupportDirectory: URL? {
         #if os(Linux)
         let url = URL(fileURLWithPath: "/var/lib")
         #elseif os(macOS)
-        let url = try! FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let url = try? FileManager.default.url(for: .applicationSupportDirectory,
+                                               in: .userDomainMask,
+                                               appropriateFor: nil,
+                                               create: true)
         #endif
         return url
     }

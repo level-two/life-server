@@ -21,7 +21,8 @@ import RxCocoa
 
 open class LifeServerCore {
     lazy var server = Server()
-    lazy var database = DatabaseManager()
+    lazy var databaseUrl = URL.applicationSupportDirectory!.appendingPathComponent("LifeServer/database.db")
+    lazy var database = DatabaseManager(with: self.databaseUrl)
     lazy var sessionManager = SessionManager(database: self.database)
     lazy var usersManager = UsersManager(database: self.database)
     lazy var gameplay = Gameplay()

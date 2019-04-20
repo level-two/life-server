@@ -17,8 +17,30 @@
 
 import Foundation
 
+enum ChatMessageDataError: Error {
+    case decodeError
+}
+
 struct ChatMessageData: Codable {
     let messageId: Int
     let userId: UserId
     let text: String
+
+    init(messageId: Int, userId: UserId, text: String) {
+        self.messageId = messageId
+        self.userId = userId
+        self.text = text
+    }
+
+    init(from dic: [String: Any?]) throws {
+        guard
+            let messageId = dic["messageId"] as? Int,
+            let userId = dic["userId"] as? UserId,
+            let text = dic["text"] as? String
+            else { throw ChatMessageDataError.decodeError }
+
+        self.messageId = messageId
+        self.userId = userId
+        self.text = text
+    }
 }
