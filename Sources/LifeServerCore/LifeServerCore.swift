@@ -25,7 +25,7 @@ open class LifeServerCore {
     lazy var sessionManager = SessionManager(database: self.database)
     lazy var usersManager = UsersManager(database: self.database)
     lazy var gameplay = Gameplay()
-    lazy var chat = Chat()
+    lazy var chat = Chat(userInfoProvider: usersManager, sessionInfoProvider: sessionManager, chatDatabase: database)
 
     public init() {
         assembleInteractions()

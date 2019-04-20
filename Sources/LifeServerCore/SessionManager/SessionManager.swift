@@ -65,7 +65,7 @@ extension SessionManager: SessionInfoProvider {
 
 extension SessionManager {
     func isLoggedIn(on connectionId: ConnectionId) -> Bool {
-        return userId(for: connectionId)? != nil
+        return userId(for: connectionId) != nil
     }
     
     func login(_ userId: UserId, on connectionId: ConnectionId) {

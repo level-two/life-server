@@ -199,6 +199,30 @@ extension DatabaseManager: ChatDatabase {
         }
     }
     
+    public func messages(fromId: Int, toId: Int) -> Promise<[ChatMessageData]> {
+        let schema = Chat()
+        let query = Select(from: schema).where(schema.messageId.between(Parameter("fromId"), and: Parameter("toId")))
+        let parameters = ["fromId": fromId, "toId": toId] as [String: Any?]
+
+        return .init() { promise in
+            connection.execute(query: query, parameters: parameters) { result in
+                
+                // TBI
+                guard let rows = result.asRows? else { return promise.reject(DatabaseManagerError.noMessagesForGivenIds) }
+                
+                var messages = [ChatMessageData]()
+                
+                rows.map {  }
+                guard
+                    let userId32 = row["userId"] as? Int32,
+                    let colorInt32 = row["color"] as? Int32
+                    else { fatalError("Database error. Failed to get row values") }
+                
+                let color = Color(from: UInt32(bitPattern: colorInt32))
+                promise.fulfill(UserData(userId: UserId(userId32), userName: userName, color: color))
+            }
+        }
+    }
     
     // SELECT * FROM CHAT WHERE CHAT.messageId between 4 and 5;
 }

@@ -53,17 +53,14 @@ extension Chat {
             guard let self = self else { return }
             guard case .chatHistoryRequest(let fromId, let count) = message else { return }
             
+            
+            // TBI!
             firstly {
-                self.chatDatabase.numberOfStoredMessages()
-            }.map { numberOfMessages throws in
-                guard let userId = self.sessionInfoProvider.userId(for: connectionId) else { throw ChatError.notLoggedIn }
-                return (numberOfMessages, userId)
-            }.then { numberOfMessages, userId in
-                self.chatDatabase.store(chatMessageData: .init(messageId: numberOfMessages, userId: userId, text: text))
+                chatDatabase.getMessages(fromId: fromId, toId: fromId+count-1)
             }.map {
-                interactor.broadcastMessage.onNext(.chatMessage(message: $0))
+                interactor.broadcastMessage.onNext(.chatHistoryResponse(messages: $0))
             }.catch {
-                interactor.sendMessage.onNext((connectionId, .chatError(error: $0.localizedDescription)))
+                interactor.sendMessage.onNext((connectionId, .chatHistoryError(error: $0.localizedDescription)))
             }
         }.disposed(by: disposeBag)
         
