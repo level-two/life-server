@@ -75,21 +75,13 @@ extension LifeServerCore {
 
         gameplayInteractor.sendMessage
             .map { ($0, try JSONEncoder().encode($1)) }
-            .bind { [weak self] userId, data in
-                guard let self = self else { return }
-                guard let connectionId = self.sessionManager.connectionId(for: userId) else { return }
-
-                self.server.send(for: connectionId, data)
-            }.disposed(by: disposeBag)
+            .bind(onNext: server.send)
+            .disposed(by: disposeBag)
 
         chatInteractor.sendMessage
             .map { ($0, try JSONEncoder().encode($1)) }
-            .bind { [weak self] userId, data in
-                guard let self = self else { return }
-                guard let connectionId = self.sessionManager.connectionId(for: userId) else { return }
-
-                self.server.send(for: connectionId, data)
-            }.disposed(by: disposeBag)
+            .bind(onNext: server.send)
+            .disposed(by: disposeBag)
     }
 
     public func runServer(host: String, port: Int) throws {
