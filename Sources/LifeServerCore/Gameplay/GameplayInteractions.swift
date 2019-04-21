@@ -21,20 +21,25 @@ import RxCocoa
 
 extension Gameplay {
     public class Interactor {
-        let onMessage = PublishSubject<(UserId, GameplayMessage)>()
-        let sendMessage = PublishSubject<(UserId, GameplayMessage)>()
+        let onMessage = PublishSubject<(ConnectionId, GameplayMessage)>()
+        let broadcastMessage = PublishSubject<GameplayMessage>()
     }
 
     public func assembleInteractions(disposeBag: DisposeBag) -> Gameplay.Interactor {
-        // internal interactions
+        let interactor = Gameplay.Interactor()
 
-        // external interactions
-        let gameplayInteractor = Gameplay.Interactor()
-
-        gameplayInteractor.onMessage.bind { message in
-            print(message)
+        interactor.onMessage.bind { [weak self] connectionId, message in
+            guard let self = self else { return }
+            if self.place(cell, for: gameCycle) {
+                interactor.broadcastMessage.onNext(.placeCell(gameCycle: cycle, cell: cell))
+            }
         }.disposed(by: disposeBag)
-
-        return gameplayInteractor
+        
+        onTimer.bind { [weak self] in
+            guard let self = self else { return }
+            let cycle = self.newCycle()
+            interactor.broadcastMessage.onNext(.new(gameCycle: cycle))
+        }.disposed(by: disposeBag)
+        return interactor
     }
 }

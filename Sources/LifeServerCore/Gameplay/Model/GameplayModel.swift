@@ -62,10 +62,11 @@ public class GameplayModel {
     /// - Send broadcast message
     /// - Update game field
     /// - Remove old events and gamefield state (cycle-2)
-    func update() {
+    
+    func newCycle() -> Int {
         cycle += 1
         gameField.updateForNewCycle()
-        server?.sendBroadcast(message: .new(gameCycle: cycle))
+        return cycle
     }
     
     /// Receive messages from players
@@ -78,15 +79,15 @@ public class GameplayModel {
     /// - - For all new cells in the next move
     /// - - - if it appears that their field is occupied after update - remove them
     /// - For older cycles - just ignore them - they are outdated
-    func onMessage(_ message: Message) {
-        guard case .placeCell(let gameCycle, let cell) = message else { return }
-        if gameCycle == cycle && gameField.canPlaceCell(cell) == true {
+    
+    func place(_ cell: Cell, for gameCycle: Int) -> Bool {
+        if gameCycle == cycle && gameField.canPlaceCell(cell) {
             gameField.placeAcceptedCell(cell)
-            server?.sendBroadcast(message: .placeCell(gameCycle: cycle, cell: cell))
-        }
-        else if gameCycle == cycle-1 && gameField.canPlaceCellInPrevCycle(cell) {
+        } else if gameCycle == cycle-1 && gameField.canPlaceCellInPrevCycle(cell) {
             gameField.placeCellInPrevCycle(cell)
-            server?.sendBroadcast(message: .placeCell(gameCycle: cycle-1, cell: cell))
+        } else {
+            return false
         }
+        return true
     }
 }
