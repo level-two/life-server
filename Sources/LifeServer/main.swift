@@ -18,7 +18,7 @@
 import Foundation
 import LifeServerCore
 
-let lifeServer = LifeServerCore()
+let lifeServer = try LifeServerCore()
 
 var args = ArraySlice(CommandLine.arguments)
 

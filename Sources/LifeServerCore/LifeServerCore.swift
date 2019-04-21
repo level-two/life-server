@@ -19,17 +19,30 @@ import Foundation
 import RxSwift
 import RxCocoa
 
+
 open class LifeServerCore {
+    public enum LifeServerCoreError: Error {
+        case failedGetApplicationSupportDirectory
+    }
+    
     let fieldWidth = 20
     let fieldHeight = 20
     let updatePeriod = TimeInterval(5)
     
-    public init() {
+    public init() throws {
+        guard let appDataDirectory = URL.applicationSupportDirectory?.appendingPathComponent("LifeServer/")
+            else { throw LifeServerCoreError.failedGetApplicationSupportDirectory }
+        
+        if !FileManager.default.fileExists(atPath: appDataDirectory.path) {
+            try FileManager.default.createDirectory(at: appDataDirectory, withIntermediateDirectories: false, attributes: nil)
+        }
+        
+        databaseUrl = appDataDirectory.appendingPathComponent("database.db")
         assembleInteractions()
     }
     
+    let databaseUrl: URL
     lazy var server = Server()
-    lazy var databaseUrl = URL.applicationSupportDirectory!.appendingPathComponent("LifeServer/database.db")
     lazy var database = DatabaseManager(with: databaseUrl)
     lazy var sessionManager = SessionManager(database: database)
     lazy var usersManager = UsersManager(database: database)
