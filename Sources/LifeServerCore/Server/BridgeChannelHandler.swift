@@ -20,7 +20,7 @@ import NIO
 import RxSwift
 import RxCocoa
 
-final class BridgeChannelHandler: ChannelInboundHandler {
+class BridgeChannelHandler: ChannelInboundHandler {
     public typealias InboundIn = Data
 
     public let onMessage = PublishSubject<Data>()

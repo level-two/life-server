@@ -17,7 +17,7 @@
 
 import Foundation
 
-public class GameFieldArray {
+class GameFieldArray {
     private var gameField: [[Cell?]]
     public let width: Int
     public let height: Int

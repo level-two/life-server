@@ -17,15 +17,15 @@
 
 import Foundation
 
-public typealias UserId = Int
+typealias UserId = Int
 
-public struct UserData: Codable {
+struct UserData: Codable {
     var userId: UserId
     var userName: String
     var color: Color
 }
 
-public struct Color: Codable {
+struct Color: Codable {
     let red, green, blue, alpha: CGFloat
 }
 

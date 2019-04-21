@@ -17,7 +17,7 @@
 
 import Foundation
 
-public class GameField {
+class GameField {
     public var acceptedCells: [Cell]
     public var unacceptedCells: [Cell]
     public var gameField: GameFieldArray

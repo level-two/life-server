@@ -17,4 +17,4 @@
 
 import Foundation
 
-public typealias ConnectionId = Int
+typealias ConnectionId = Int

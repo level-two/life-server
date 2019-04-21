@@ -17,7 +17,7 @@
 
 import Foundation
 
-public struct Cell: Codable {
+struct Cell: Codable {
     var pos: (x: Int, y: Int)
     var userId: UserId
 }

@@ -20,17 +20,20 @@ import RxSwift
 import RxCocoa
 
 open class LifeServerCore {
-    lazy var server = Server()
-    lazy var databaseUrl = URL.applicationSupportDirectory!.appendingPathComponent("LifeServer/database.db")
-    lazy var database = DatabaseManager(with: self.databaseUrl)
-    lazy var sessionManager = SessionManager(database: self.database)
-    lazy var usersManager = UsersManager(database: self.database)
-    lazy var gameplay = Gameplay()
-    lazy var chat = Chat(userInfoProvider: usersManager, sessionInfoProvider: sessionManager, chatDatabase: database)
-
+    let fieldWidth = 20
+    let fieldHeight = 20
+    let updatePeriod = TimeInterval(5)
+    
     public init() {
         assembleInteractions()
     }
-
+    
+    lazy var server = Server()
+    lazy var databaseUrl = URL.applicationSupportDirectory!.appendingPathComponent("LifeServer/database.db")
+    lazy var database = DatabaseManager(with: databaseUrl)
+    lazy var sessionManager = SessionManager(database: database)
+    lazy var usersManager = UsersManager(database: database)
+    lazy var chat = Chat(userInfoProvider: usersManager, sessionInfoProvider: sessionManager, chatDatabase: database)
+    lazy var gameplay = Gameplay(fieldWidth: fieldWidth, fieldHeight: fieldHeight, updatePeriod: updatePeriod)
     let disposeBag = DisposeBag()
 }

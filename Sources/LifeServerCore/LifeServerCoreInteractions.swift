@@ -30,8 +30,7 @@ extension LifeServerCore {
         let gameplayInteractor = gameplay.assembleInteractions(disposeBag: disposeBag)
         let chatInteractor = chat.assembleInteractions(disposeBag: disposeBag)
 
-        serverInteractor.onMessage.bind { [weak self] connectionId, data in
-            guard let self = self else { return }
+        serverInteractor.onMessage.bind { connectionId, data in
             // TODO: Think about json or incoming message validation before using it
 
             if let sessionManagerMessage = try? JSONDecoder().decode(SessionManagerMessage.self, from: data) {
@@ -73,15 +72,17 @@ extension LifeServerCore {
             .bind(onNext: server.send)
             .disposed(by: disposeBag)
 
-        gameplayInteractor.sendMessage
-            .map { ($0, try JSONEncoder().encode($1)) }
-            .bind(onNext: server.send)
-            .disposed(by: disposeBag)
+        gameplayInteractor.broadcastMessage
+            .map { try JSONEncoder().encode($0) }
+            .bind { [weak self] data in
+                self?.sessionManager.connectionsForLoggedUsers?.forEach { self?.server.send(for: $0, data) }
+            }.disposed(by: disposeBag)
 
-        chatInteractor.sendMessage
-            .map { ($0, try JSONEncoder().encode($1)) }
-            .bind(onNext: server.send)
-            .disposed(by: disposeBag)
+        chatInteractor.broadcastMessage
+            .map { try JSONEncoder().encode($0) }
+            .bind { [weak self] data in
+                self?.sessionManager.connectionsForLoggedUsers?.forEach { self?.server.send(for: $0, data) }
+            }.disposed(by: disposeBag)
     }
 
     public func runServer(host: String, port: Int) throws {

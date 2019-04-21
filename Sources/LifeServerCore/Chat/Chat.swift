@@ -19,7 +19,7 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-public enum ChatError: Error {
+enum ChatError: Error {
     case notLoggedIn
     case logFileInvalidHandler
     case invalidChatMessagesRequest

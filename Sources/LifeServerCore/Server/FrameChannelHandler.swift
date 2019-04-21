@@ -18,7 +18,7 @@
 import Foundation
 import NIO
 
-final class FrameChannelHandler: ChannelInboundHandler {
+class FrameChannelHandler: ChannelInboundHandler {
     public typealias InboundIn = ByteBuffer
     public typealias InboundOut = Data
 

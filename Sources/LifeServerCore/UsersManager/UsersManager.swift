@@ -27,7 +27,7 @@ protocol UserInfoProvider {
     func userData(for userName: String) -> Promise<UserData>
 }
 
-public class UsersManager {
+class UsersManager {
     init(database: UserDatabase) {
         self.database = database
     }

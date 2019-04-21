@@ -24,6 +24,7 @@ protocol SessionInfoProvider {
     func userId(for connectionId: ConnectionId) -> UserId?
     func connectionId(for userId: UserId) -> ConnectionId?
     func isLoggedIn(_ userId: UserId) -> Bool
+    var connectionsForLoggedUsers: [ConnectionId]? { get }
 }
 
 class SessionManager {
@@ -42,6 +43,14 @@ class SessionManager {
 }
 
 extension SessionManager: SessionInfoProvider {
+    var connectionsForLoggedUsers: [ConnectionId]? {
+        var result: [ConnectionId]?
+        queue.sync { [weak self] in
+            result = self?.sessions.filter { $0.userId != nil }.map { $0.connectionId }
+        }
+        return result
+    }
+    
     public func userId(for connectionId: ConnectionId) -> UserId? {
         var result: UserId?
         queue.sync { [weak self] in

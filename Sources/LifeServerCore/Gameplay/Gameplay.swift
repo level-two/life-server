@@ -33,6 +33,10 @@ class Gameplay {
         }
     }
     
+    deinit {
+        updateTimer?.invalidate()
+    }
+    
     func place(_ cell: Cell, for gameCycle: Int) -> Bool {
         if gameCycle == cycle && gameField.canPlaceCell(cell) {
             gameField.placeAcceptedCell(cell)
