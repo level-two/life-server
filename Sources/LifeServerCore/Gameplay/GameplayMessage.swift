@@ -17,33 +17,20 @@
 
 import Foundation
 
-//public enum Message {
-//    case placeCell(gameCycle: Int, cell: Cell)
-//    case new(gameCycle: Int)
-//}
-
-
 enum GameplayMessage: Codable {
-    case sendChatMessage(message: String)
-    case getChatMessages(fromId: Int?, count: Int?)
-    case chatMessage(message: ChatMessageData)
-    case chatMessages(messages: [ChatMessageData]?, error: String?)
+    case placeCell(cell: Cell, gameCycle: Int)
+    case newGameCycle(gameCycle: Int)
 }
 
 extension GameplayMessage {
     private enum CodingKeys: String, CodingKey {
-        case sendChatMessage
-        case getChatMessages
-        case chatMessage
-        case chatMessages
+        case placeCell
+        case newGameCycle
     }
 
     private enum AuxCodingKeys: String, CodingKey {
-        case user
-        case error
-        case messages
-        case fromId
-        case count
+        case cell
+        case gameCycle
     }
 
     private enum DecodeError: Error {
@@ -58,10 +45,8 @@ extension GameplayMessage {
             return try container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: key).decode(T.self, forKey: auxKey)
         }
         switch key {
-        case .sendChatMessage:    self = try .sendChatMessage(message: dec())
-        case .chatMessage:        self = try .chatMessage(message: dec())
-        case .chatMessages:       self = try .chatMessages(messages: dec(.messages), error: dec(.error))
-        case .getChatMessages:    self = try .getChatMessages(fromId: dec(.fromId), count: dec(.count))
+        case .placeCell: self = try .placeCell(cell: dec(.cell), gameCycle: dec(.gameCycle))
+        case .newGameCycle: self = try .newGameCycle(gameCycle: dec())
         }
     }
 
@@ -69,18 +54,12 @@ extension GameplayMessage {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         switch self {
-        case .sendChatMessage(let message):
-            try container.encode(message, forKey: .sendChatMessage)
-        case .chatMessage(let message):
-            try container.encode(message, forKey: .chatMessage)
-        case .chatMessages(let messages, let error):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .chatMessages)
-            try nestedContainter.encode(messages, forKey: .messages)
-            try nestedContainter.encode(error, forKey: .error)
-        case .getChatMessages(let fromId, let count):
-            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .getChatMessages)
-            try nestedContainter.encode(fromId, forKey: .fromId)
-            try nestedContainter.encode(count, forKey: .count)
+        case .placeCell(let cell, let gameCycle):
+            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .placeCell)
+            try nestedContainter.encode(cell, forKey: .cell)
+            try nestedContainter.encode(gameCycle, forKey: .gameCycle)
+        case .newGameCycle(let gameCycle):
+            try container.encode(gameCycle, forKey: .newGameCycle)
         }
     }
 }

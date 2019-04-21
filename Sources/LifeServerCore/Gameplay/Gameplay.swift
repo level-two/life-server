@@ -19,7 +19,32 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-public class Gameplay {
-    init() {
+class Gameplay {
+    let onNewCycle = PublishSubject<Int>()
+    
+    init(fieldWidth: Int, fieldHeight: Int, updatePeriod: TimeInterval) {
+        self.gameField = GameField(fieldWidth, fieldHeight)
+        
+        updateTimer = .scheduledTimer(withTimeInterval: updatePeriod, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            self.cycle += 1
+            self.gameField.updateForNewCycle()
+            self.onNewCycle.onNext(self.cycle)
+        }
     }
+    
+    func place(_ cell: Cell, for gameCycle: Int) -> Bool {
+        if gameCycle == cycle && gameField.canPlaceCell(cell) {
+            gameField.placeAcceptedCell(cell)
+        } else if gameCycle == cycle-1 && gameField.canPlaceCellInPrevCycle(cell) {
+            gameField.placeCellInPrevCycle(cell)
+        } else {
+            return false
+        }
+        return true
+    }
+    
+    fileprivate var updateTimer: Timer?
+    fileprivate let gameField: GameField
+    fileprivate var cycle = 0
 }

@@ -30,16 +30,16 @@ extension Gameplay {
 
         interactor.onMessage.bind { [weak self] connectionId, message in
             guard let self = self else { return }
-            if self.place(cell, for: gameCycle) {
-                interactor.broadcastMessage.onNext(.placeCell(gameCycle: cycle, cell: cell))
+            guard case .placeCell(let cell, let cycle) = message else { return }
+            
+            if self.place(cell, for: cycle) {
+                interactor.broadcastMessage.onNext(.placeCell(cell: cell, gameCycle: cycle))
             }
         }.disposed(by: disposeBag)
         
-        onTimer.bind { [weak self] in
-            guard let self = self else { return }
-            let cycle = self.newCycle()
-            interactor.broadcastMessage.onNext(.new(gameCycle: cycle))
-        }.disposed(by: disposeBag)
+        onNewCycle
+            .bind { interactor.broadcastMessage.onNext(.newGameCycle(gameCycle: $0)) }
+            .disposed(by: disposeBag)
         return interactor
     }
 }

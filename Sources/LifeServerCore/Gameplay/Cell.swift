@@ -17,12 +17,23 @@
 
 import Foundation
 
-public struct Cell {
+public struct Cell: Codable {
     var pos: (x: Int, y: Int)
-    var userId: Int
+    var userId: UserId
+}
+
+extension Cell {
+    public init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        pos.x = try container.decode(Int.self)
+        pos.y = try container.decode(Int.self)
+        userId = try container.decode(UserId.self)
+    }
     
-    public init(pos: (x: Int, y: Int), userId: Int, color: UIColor) {
-        self.pos = pos
-        self.userId = userId
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+        try container.encode(Int(pos.x))
+        try container.encode(Int(pos.y))
+        try container.encode(Int(userId))
     }
 }
