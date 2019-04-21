@@ -30,41 +30,10 @@ extension Server {
     public func assembleInteractions(disposeBag: DisposeBag) -> Server.Interactor {
         let serverInteractor = Server.Interactor()
 
-        serverInteractor.onConnectionEstablished.bind(to: onConnectionEstablished).disposed(by: disposeBag)
-        serverInteractor.onConnectionClosed.bind(to: onConnectionClosed).disposed(by: disposeBag)
-        serverInteractor.onMessage.bind(to: onMessage).disposed(by: disposeBag)
+        onConnectionEstablished.bind(to: serverInteractor.onConnectionEstablished).disposed(by: disposeBag)
+        onConnectionClosed.bind(to: serverInteractor.onConnectionClosed).disposed(by: disposeBag)
+        onMessage.bind(to: serverInteractor.onMessage).disposed(by: disposeBag)
 
         return serverInteractor
-    }
-
-    public func runServer(host: String, port: Int) throws {
-        let bootstrap = makeBootstrap { [weak self] channel in
-            guard let self = self else { return channel.eventLoop.newFailedFuture(error: ServerError.serverDestroyed) }
-
-            let connectionId = channel.connectionId
-            self.storeConnection(channel, with: connectionId)
-            self.onConnectionEstablished.onNext(connectionId)
-
-            _ = channel.closeFuture.map { _ in
-                self.onConnectionClosed.onNext(connectionId)
-                self.removeConnection(with: connectionId)
-            }
-
-            let bridge = BridgeChannelHandler()
-            bridge.onMessage
-                .map { (connectionId, $0) }
-                .bind(to: self.onMessage)
-                .disposed(by: bridge.disposeBag)
-
-            return channel.pipeline.addHandlers(FrameChannelHandler(), bridge, first: true)
-        }
-
-        listenChannel = try bootstrap.bind(host: host, port: port).wait()
-        guard let localAddress = listenChannel?.localAddress else {
-            print("Address was unable to bind. Please check that the socket was not closed or that the address family was understood.")
-            throw ServerError.addressBindError
-        }
-
-        print("Server started and listening on \(localAddress)")
     }
 }

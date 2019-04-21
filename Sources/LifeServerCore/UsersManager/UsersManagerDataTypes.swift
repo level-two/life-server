@@ -26,16 +26,21 @@ struct UserData: Codable {
 }
 
 struct Color: Codable {
-    let red, green, blue, alpha: CGFloat
+    let red, green, blue, alpha: Double
 }
 
 extension Color {
     public init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        red = try container.decode(CGFloat.self)/255
-        green = try container.decode(CGFloat.self)/255
-        blue = try container.decode(CGFloat.self)/255
-        alpha = try container.decode(CGFloat.self)/255
+        let r = try container.decode(Int.self)
+        let g = try container.decode(Int.self)
+        let b = try container.decode(Int.self)
+        let a = try container.decode(Int.self)
+        
+        red = Double(r)/255
+        green = Double(g)/255
+        blue = Double(b)/255
+        alpha = Double(a)/255
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.unkeyedContainer()

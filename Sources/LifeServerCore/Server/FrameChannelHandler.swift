@@ -26,9 +26,9 @@ class FrameChannelHandler: ChannelInboundHandler {
         case unableGetDataChunk
         case messageToDataFailed
     }
-
-    public func channelRead(ctx: ChannelHandlerContext, byteBufWrapped: NIOAny) {
-        let byteBuf = self.unwrapInboundIn(byteBufWrapped)
+    
+    public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+        let byteBuf = self.unwrapInboundIn(data)
         guard let chunk = byteBuf.getString(at: byteBuf.readerIndex, length: byteBuf.readableBytes) else {
             ctx.fireErrorCaught(FrameError.unableGetDataChunk)
             return
@@ -38,8 +38,8 @@ class FrameChannelHandler: ChannelInboundHandler {
         while let newlineRange = collected.rangeOfCharacter(from: .newlines) {
             let message = collected[..<newlineRange.lowerBound]
 
-            if let data = message.data(using: .utf8) {
-                ctx.fireChannelRead(self.wrapInboundOut(data))
+            if let messageData = message.data(using: .utf8) {
+                ctx.fireChannelRead(self.wrapInboundOut(messageData))
             } else {
                 ctx.fireErrorCaught(FrameError.messageToDataFailed)
             }

@@ -203,11 +203,22 @@ extension DatabaseManager: ChatDatabase {
 
         return .init() { promise in
             connection.execute(query: query, parameters: parameters) { result in
-                guard
-                    let rows = result.asRows,
-                    let messages = try? rows.map(ChatMessageData.init)
-                    else { return promise.reject(DatabaseManagerError.failedGetChatMessages) }
-                promise.fulfill(messages)
+                guard let rows = result.asRows else { return promise.reject(DatabaseManagerError.failedGetChatMessages) }
+                
+                let messages = try? rows.map { dic -> ChatMessageData in
+                    guard let messageId = dic["messageId"] as? Int32,
+                          let userId = dic["userId"] as? Int32,
+                          let text = dic["text"] as? String
+                    else { throw DatabaseManagerError.chatMessageDecodeError }
+
+                    return ChatMessageData(messageId: Int(messageId), userId: UserId(userId), text: text)
+                }
+                
+                if let messages = messages {
+                    promise.fulfill(messages)
+                } else {
+                    promise.reject(DatabaseManagerError.failedGetChatMessages)
+                }
             }
         }
     }
@@ -226,14 +237,14 @@ extension DatabaseManager {
 
 extension Color {
     public init(from val: UInt32) {
-        alpha = CGFloat((val >> 24) & 0xff) / 0xff
-        red = CGFloat((val >> 16) & 0xff) / 0xff
-        green = CGFloat((val >> 8) & 0xff) / 0xff
-        blue = CGFloat((val >> 0) & 0xff) / 0xff
+        alpha = Double((val >> 24) & 0xff) / 0xff
+        red = Double((val >> 16) & 0xff) / 0xff
+        green = Double((val >> 8) & 0xff) / 0xff
+        blue = Double((val >> 0) & 0xff) / 0xff
     }
 
     public var toInt32: Int32 {
-        func comp(_ val: CGFloat, _ idx: UInt32) -> UInt32 {
+        func comp(_ val: Double, _ idx: UInt32) -> UInt32 {
             return UInt32(val * 255) << (idx * 8)
         }
 

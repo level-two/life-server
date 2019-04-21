@@ -26,15 +26,11 @@ class BridgeChannelHandler: ChannelInboundHandler {
     public let onMessage = PublishSubject<Data>()
     public let disposeBag = DisposeBag()
 
-    deinit {
-        print("[DEBUG!!] 🔥 BridgeChannelHandler deinit!")
-    }
-
-    public func channelRead(ctx: ChannelHandlerContext, messageIn: NIOAny) {
-        let data = self.unwrapInboundIn(messageIn)
+    public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+        let unwrappedData = self.unwrapInboundIn(data)
         // Think about json validation before using it
         // we could have also sanitized the user input by using a regular expression in our route path to make sure that the incoming value was a single letter
-        onMessage.onNext(data)
+        onMessage.onNext(unwrappedData)
     }
 
     public func errorCaught(ctx: ChannelHandlerContext, error: Error) {

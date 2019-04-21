@@ -20,4 +20,5 @@ import Foundation
 enum DatabaseManagerError: Error {
     case noUser
     case failedGetChatMessages
+    case chatMessageDecodeError
 }
