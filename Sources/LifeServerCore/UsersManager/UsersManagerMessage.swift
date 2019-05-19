@@ -21,6 +21,9 @@ enum UsersManagerMessage: Codable {
     case createUser(userName: String, color: Color)
     case createUserSuccess(userData: UserData)
     case createUserError(error: String)
+    case userDataRequest(userId: UserId)
+    case userDataRequestSuccess(userData: UserData)
+    case userDataRequestError(error: String)
 }
 
 extension UsersManagerMessage {
@@ -28,6 +31,9 @@ extension UsersManagerMessage {
         case createUser
         case createUserSuccess
         case createUserError
+        case userDataRequest
+        case userDataRequestSuccess
+        case userDataRequestError
     }
 
     private enum AuxCodingKeys: String, CodingKey {
@@ -50,6 +56,9 @@ extension UsersManagerMessage {
         case .createUser: self = try .createUser(userName: dec(.userName), color: dec(.color))
         case .createUserSuccess: self = try .createUserSuccess(userData: dec())
         case .createUserError: self = try .createUserError(error: dec())
+        case .userDataRequest: self = try .userDataRequest(userId: dec())
+        case .userDataRequestSuccess: self = try .userDataRequestSuccess(userData: dec())
+        case .userDataRequestError: self = try .userDataRequestError(error: dec())
         }
     }
 
@@ -65,6 +74,12 @@ extension UsersManagerMessage {
             try container.encode(userData, forKey: .createUserSuccess)
         case .createUserError(let error):
             try container.encode(error, forKey: .createUserError)
+        case .userDataRequest(let userId):
+            try container.encode(userId, forKey: .userDataRequest)
+        case .userDataRequestSuccess(let userData):
+            try container.encode(userData, forKey: .userDataRequestSuccess)
+        case .userDataRequestError(let error):
+            try container.encode(error, forKey: .userDataRequestError)
         }
     }
 }

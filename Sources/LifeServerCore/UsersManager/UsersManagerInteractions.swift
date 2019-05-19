@@ -44,6 +44,19 @@ extension UsersManager {
             }
         }.disposed(by: disposeBag)
 
+        interactor.onMessage.bind { [weak self] connectionId, message in
+            guard let self = self else { return }
+            guard case .userDataRequest(let userId) = message else { return }
+            
+            firstly {
+                self.userData(for: userId)
+            }.map {
+                interactor.sendMessage.onNext((connectionId, .userDataRequestSuccess(userData: $0)))
+            }.catch {
+                interactor.sendMessage.onNext((connectionId, .userDataRequestError(error: $0.localizedDescription)))
+            }
+        }.disposed(by: disposeBag)
+        
         return interactor
     }
 }
