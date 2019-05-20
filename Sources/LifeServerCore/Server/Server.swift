@@ -68,6 +68,7 @@ class Server {
                 let str = String(data: data, encoding: .utf8)
                 else { return }
             
+            print("Sent: \(str)")
             var buffer = channel.allocator.buffer(capacity: str.count)
             buffer.write(string: str)
             channel.writeAndFlush(buffer, promise: nil)
