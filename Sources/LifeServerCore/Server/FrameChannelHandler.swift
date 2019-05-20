@@ -34,9 +34,9 @@ class FrameChannelHandler: ChannelInboundHandler {
             return
         }
         collected += chunk
-
-        while let newlineRange = collected.rangeOfCharacter(from: .newlines) {
-            let message = collected[..<newlineRange.lowerBound]
+        
+        while let jsonRange = jsonRange(in: collected) {
+            let message = collected[jsonRange]
 
             if let messageData = message.data(using: .utf8) {
                 ctx.fireChannelRead(self.wrapInboundOut(messageData))
@@ -44,13 +44,39 @@ class FrameChannelHandler: ChannelInboundHandler {
                 ctx.fireErrorCaught(FrameError.messageToDataFailed)
             }
 
-            collected.removeSubrange(..<newlineRange.upperBound)
+            collected.removeSubrange(...jsonRange.upperBound)
         }
     }
 
     public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
         print("CollectingInboundHandler caught error: ", error)
         ctx.close(promise: nil)
+    }
+    
+    func jsonRange(in string: String) -> ClosedRange<String.Index>? {
+        guard let leftBound = string.firstIndex(of: "{") else { return nil }
+        
+        var bracesCount = 0
+        var rightBound = leftBound
+        
+        repeat {
+            if string[rightBound] == "{" {
+                bracesCount += 1
+            }
+            
+            if string[rightBound] == "}" {
+                bracesCount -= 1
+                if bracesCount == 0 {
+                    break
+                }
+            }
+            
+            rightBound = string.index(after: rightBound)
+        } while rightBound != string.endIndex
+        
+        guard rightBound != string.endIndex else { return nil }
+        
+        return leftBound...rightBound
     }
     
     fileprivate var collected = ""

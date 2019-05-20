@@ -34,7 +34,10 @@ class Server {
             self.storeConnection(channel, with: connectionId)
             self.onConnectionEstablished.onNext(connectionId)
             
+            print("Established connection from: \(channel.remoteAddress!)")
+            
             _ = channel.closeFuture.map { _ in
+                print("Closed connection with: \(channel.remoteAddress!)")
                 self.onConnectionClosed.onNext(connectionId)
                 self.removeConnection(with: connectionId)
             }
