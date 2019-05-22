@@ -20,7 +20,8 @@ import Foundation
 enum ChatMessage: Codable {
     case sendChatMessage(message: String)
     case chatHistoryRequest(fromId: Int, count: Int)
-
+    case chatRecentHistoryRequest(count: Int)
+    
     case chatMessage(message: ChatMessageData)
     case chatError(error: String)
     case chatHistoryResponse(messages: [ChatMessageData])
@@ -28,24 +29,37 @@ enum ChatMessage: Codable {
 }
 
 extension ChatMessage {
+    init(from json: String) throws {
+        self = try JSONDecoder().decode(ChatMessage.self, from: json.data(using: .utf8)!)
+    }
+    
+    var json: String {
+        guard let data = try? JSONEncoder().encode(self) else { fatalError() }
+        guard let jsonString = String(data: data, encoding: .utf8) else { fatalError() }
+        return jsonString
+    }
+}
+
+extension ChatMessage {
     private enum CodingKeys: String, CodingKey {
         case sendChatMessage
         case chatHistoryRequest
+        case chatRecentHistoryRequest
         case chatMessage
         case chatError
         case chatHistoryResponse
         case chatHistoryError
     }
-
+    
     private enum AuxCodingKeys: String, CodingKey {
         case fromId
         case count
     }
-
+    
     private enum DecodeError: Error {
         case noValidKeys
     }
-
+    
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         guard let key = container.allKeys.first else { throw DecodeError.noValidKeys }
@@ -56,18 +70,19 @@ extension ChatMessage {
                 .decode(T.self, forKey: auxKey)
         }
         switch key {
-        case .sendChatMessage:     self = try .sendChatMessage(message: dec())
-        case .chatHistoryRequest:  self = try .chatHistoryRequest(fromId: dec(.fromId), count: dec(.count))
-        case .chatMessage:         self = try .chatMessage(message: dec())
-        case .chatError:           self = try .chatError(error: dec())
-        case .chatHistoryResponse: self = try .chatHistoryResponse(messages: dec())
-        case .chatHistoryError:    self = try .chatHistoryError(error: dec())
+        case .sendChatMessage:          self = try .sendChatMessage(message: dec())
+        case .chatHistoryRequest:       self = try .chatHistoryRequest(fromId: dec(.fromId), count: dec(.count))
+        case .chatRecentHistoryRequest: self = try .chatRecentHistoryRequest(count: dec())
+        case .chatMessage:              self = try .chatMessage(message: dec())
+        case .chatError:                self = try .chatError(error: dec())
+        case .chatHistoryResponse:      self = try .chatHistoryResponse(messages: dec())
+        case .chatHistoryError:         self = try .chatHistoryError(error: dec())
         }
     }
-
+    
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-
+        
         switch self {
         case .sendChatMessage(let message):
             try container.encode(message, forKey: .sendChatMessage)
@@ -75,6 +90,8 @@ extension ChatMessage {
             var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .chatHistoryRequest)
             try nestedContainter.encode(fromId, forKey: .fromId)
             try nestedContainter.encode(count, forKey: .count)
+        case .chatRecentHistoryRequest(let count):
+            try container.encode(count, forKey: .chatRecentHistoryRequest)
         case .chatMessage(let message):
             try container.encode(message, forKey: .chatMessage)
         case .chatError(let error):
