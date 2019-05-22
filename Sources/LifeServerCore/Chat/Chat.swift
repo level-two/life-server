@@ -18,6 +18,7 @@
 import Foundation
 import RxSwift
 import RxCocoa
+import PromiseKit
 
 enum ChatError: Error {
     case notLoggedIn

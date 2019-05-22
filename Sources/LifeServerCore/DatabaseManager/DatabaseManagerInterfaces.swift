@@ -29,6 +29,5 @@ protocol UserDatabase: class {
 
 protocol ChatDatabase: class {
     func store(chatMessageData: ChatMessageData) -> Promise<ChatMessageData>
-    func numberOfStoredMessages() -> Promise<Int>
     func messages(fromId: Int, toId: Int) -> Promise<[ChatMessageData]>
 }

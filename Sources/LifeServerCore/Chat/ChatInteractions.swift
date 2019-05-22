@@ -34,14 +34,10 @@ extension Chat {
             guard let self = self else { return }
             guard case .sendChatMessage(let text) = message else { return }
 
-            firstly {
-                self.chatDatabase.numberOfStoredMessages()
-            }.map { numberOfMessages throws in
+            firstly { () throws -> Promise<ChatMessageData> in
                 guard let userId = self.sessionInfoProvider.userId(for: connectionId) else { throw ChatError.notLoggedIn }
-                return (numberOfMessages, userId)
-            }.then { numberOfMessages, userId in
-                self.chatDatabase.store(chatMessageData: .init(messageId: numberOfMessages, userId: userId, text: text))
-            }.map {
+                return self.chatDatabase.store(chatMessageData: .init(userId: userId, text: text))
+            }.done {
                 interactor.broadcastMessage.onNext(.chatMessage(message: $0))
             }.catch {
                 interactor.sendMessage.onNext((connectionId, .chatError(error: $0.localizedDescription)))

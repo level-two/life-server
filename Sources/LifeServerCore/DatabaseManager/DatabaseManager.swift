@@ -51,106 +51,130 @@ class DatabaseManager {
         let needInitDb = !FileManager.default.fileExists(atPath: databaseUrl.path)
 
         self.connection = SQLiteConnection(filename: databaseUrl.path)
+        
         connection.connect { error in
             guard error == nil else { fatalError("Failed to connect to database: \(error!.localizedDescription)") }
             guard needInitDb else { return }
             createUsersTable()
             createChatTable()
         }
+        
+        getNumberOfStoredMessages().done {
+            self.numberOfStoredMessages = $0
+        }.catch {
+            fatalError("Failed to get number of stored messages: \($0.localizedDescription)")
+        }
     }
 
     let connection: SQLiteConnection
+    let serialQueue = DispatchQueue(label: "life.server.databaseManagerSerialQueue")
+    var numberOfStoredMessages: Int = 0
 }
 
 extension DatabaseManager: UserDatabase {
     public func containsUser(with userId: UserId) -> Promise<Bool> {
-        let usersSchema = Users()
-        let userQuery = Select(usersSchema.userId, from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
-        let parameters = ["userIdParam": userId] as [String: Any?]
         return .init() { promise in
-            connection.execute(query: userQuery, parameters: parameters) { queryResult in
-                promise.fulfill(queryResult.asRows?.first != nil)
+            self.serialQueue.async {
+                let usersSchema = Users()
+                let userQuery = Select(usersSchema.userId, from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
+                let parameters = ["userIdParam": userId] as [String: Any?]
+                
+                self.connection.execute(query: userQuery, parameters: parameters) { queryResult in
+                    promise.fulfill(queryResult.asRows?.first != nil)
+                }
             }
         }
     }
 
     public func containsUser(with userName: String) -> Promise<Bool> {
-        let usersSchema = Users()
-        let userQuery = Select(usersSchema.userName, from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
-        let parameters = ["userNameParam": userName] as [String: Any?]
         return .init() { promise in
-            connection.execute(query: userQuery, parameters: parameters) { queryResult in
-                promise.fulfill(queryResult.asRows?.first != nil)
+            self.serialQueue.async {
+                let usersSchema = Users()
+                let userQuery = Select(usersSchema.userName, from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
+                let parameters = ["userNameParam": userName] as [String: Any?]
+                
+                self.connection.execute(query: userQuery, parameters: parameters) { queryResult in
+                    promise.fulfill(queryResult.asRows?.first != nil)
+                }
             }
         }
     }
 
     @discardableResult
     public func store(userData: UserData) -> Promise<UserData> {
-        let usersSchema = Users()
-        let insertQuery = Insert(into: usersSchema, values: [userData.userId, userData.userName, userData.color.toInt32])
         return .init() { promise in
-            connection.execute(query: insertQuery) { queryResult in
-                if case .error(let err) = queryResult {
-                    promise.reject(err)
-                } else {
-                    promise.fulfill(userData)
+            self.serialQueue.async {
+                let usersSchema = Users()
+                let insertQuery = Insert(into: usersSchema, values: [userData.userId, userData.userName, userData.color.toInt32])
+                self.connection.execute(query: insertQuery) { queryResult in
+                    if case .error(let err) = queryResult {
+                        promise.reject(err)
+                    } else {
+                        promise.fulfill(userData)
+                    }
                 }
             }
         }
     }
 
     public func userData(with userId: UserId) -> Promise<UserData> {
-        let usersSchema = Users()
-        let userQuery = Select(from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
-        let parameters = ["userIdParam": userId] as [String: Any?]
         return .init() { promise in
-            connection.execute(query: userQuery, parameters: parameters) { queryResult in
-                guard let row = queryResult.asRows?.first else {
-                    return promise.reject(DatabaseManagerError.noUser)
+            self.serialQueue.async {
+                let usersSchema = Users()
+                let userQuery = Select(from: usersSchema).where(usersSchema.userId.like(Parameter("userIdParam")))
+                let parameters = ["userIdParam": userId] as [String: Any?]
+                
+                self.connection.execute(query: userQuery, parameters: parameters) { queryResult in
+                    guard let row = queryResult.asRows?.first else {
+                        return promise.reject(DatabaseManagerError.noUser)
+                    }
+
+                    guard
+                        let userName = row["userName"] as? String,
+                        let colorInt32 = row["color"] as? Int32
+                        else { fatalError("Database error. Failed to get row values") }
+
+                    let color = Color(from: UInt32(bitPattern: colorInt32))
+                    promise.fulfill(UserData(userId: userId, userName: userName, color: color))
                 }
-
-                guard
-                    let userName = row["userName"] as? String,
-                    let colorInt32 = row["color"] as? Int32
-                    else { fatalError("Database error. Failed to get row values") }
-
-                let color = Color(from: UInt32(bitPattern: colorInt32))
-                promise.fulfill(UserData(userId: userId, userName: userName, color: color))
             }
         }
     }
 
     public func userData(with userName: String) -> Promise<UserData> {
-        let usersSchema = Users()
-        let userQuery = Select(from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
-        let parameters = ["userNameParam": userName] as [String: Any?]
-
         return .init() { promise in
-            connection.execute(query: userQuery, parameters: parameters) { queryResult in
-                guard let row = queryResult.asRows?.first else { return promise.reject(DatabaseManagerError.noUser) }
+            self.serialQueue.async {
+                let usersSchema = Users()
+                let userQuery = Select(from: usersSchema).where(usersSchema.userName.like(Parameter("userNameParam")))
+                let parameters = ["userNameParam": userName] as [String: Any?]
+                
+                self.connection.execute(query: userQuery, parameters: parameters) { queryResult in
+                    guard let row = queryResult.asRows?.first else { return promise.reject(DatabaseManagerError.noUser) }
 
-                guard
-                    let userId32 = row["userId"] as? Int32,
-                    let colorInt32 = row["color"] as? Int32
-                    else { fatalError("Database error. Failed to get row values") }
+                    guard
+                        let userId32 = row["userId"] as? Int32,
+                        let colorInt32 = row["color"] as? Int32
+                        else { fatalError("Database error. Failed to get row values") }
 
-                let color = Color(from: UInt32(bitPattern: colorInt32))
-                promise.fulfill(UserData(userId: UserId(userId32), userName: userName, color: color))
+                    let color = Color(from: UInt32(bitPattern: colorInt32))
+                    promise.fulfill(UserData(userId: UserId(userId32), userName: userName, color: color))
+                }
             }
         }
     }
 
     public func numberOfRegisteredUsers() -> Promise<Int> {
-        let countQuery = "SELECT COUNT(userId) FROM USERS"
-
         return .init() { promise in
-                connection.execute(countQuery) { queryResult in
-                guard
-                    let row = queryResult.asRows?.first,
-                    let count = row.first?.value as? Int32
-                    else { fatalError("Failed to get number of registered users") }
-                promise.fulfill(Int(count))
+            self.serialQueue.async {
+                let countQuery = "SELECT COUNT(userId) FROM USERS"
+             
+                self.connection.execute(countQuery) { queryResult in
+                    guard
+                        let row = queryResult.asRows?.first,
+                        let count = row.first?.value as? Int32
+                        else { fatalError("Failed to get number of registered users") }
+                    promise.fulfill(Int(count))
+                }
             }
         }
     }
@@ -159,7 +183,7 @@ extension DatabaseManager: UserDatabase {
 extension DatabaseManager {
     func createUsersTable() {
         let createTableQuery = "CREATE TABLE USERS(userId integer PRIMARY KEY, userName text UNIQUE, color integer)"
-        connection.execute(createTableQuery) { queryResult in
+        self.connection.execute(createTableQuery) { queryResult in
             if let error = queryResult.asError {
                 fatalError("Failed to create USERS table: \(error)")
             }
@@ -169,55 +193,68 @@ extension DatabaseManager {
 
 extension DatabaseManager: ChatDatabase {
     public func store(chatMessageData: ChatMessageData) -> Promise<ChatMessageData> {
-        let schema = Chat()
-        let query = Insert(into: schema, values: [chatMessageData.messageId, chatMessageData.userId, chatMessageData.text])
         return .init() { promise in
-            connection.execute(query: query) { result in
-                if case .error(let err) = result {
-                    promise.reject(err)
-                } else {
-                    promise.fulfill(chatMessageData)
+            self.serialQueue.async {
+                let schema = Chat()
+                
+                var messageData = chatMessageData
+                messageData.messageId = self.numberOfStoredMessages
+                self.numberOfStoredMessages += 1
+                
+                let query = Insert(into: schema, values: [messageData.messageId, messageData.userId, messageData.text])
+                self.connection.execute(query: query) { result in
+                    if case .error(let err) = result {
+                        promise.reject(err)
+                    } else {
+                        promise.fulfill(messageData)
+                    }
                 }
             }
         }
     }
-
-    public func numberOfStoredMessages() -> Promise<Int> {
-        let query = "SELECT COUNT(messageId) FROM CHAT"
-
-        return .init() { promise in
-            connection.execute(query) { result in
-                guard
-                    let row = result.asRows?.first,
-                    let count = row.first?.value as? Int32
-                    else { fatalError("Failed to get number of stored messages") }
-                promise.fulfill(Int(count))
-            }
-        }
-    }
-
+    
     public func messages(fromId: Int, toId: Int) -> Promise<[ChatMessageData]> {
-        let schema = Chat()
-        let query = Select(from: schema).where(schema.messageId.between(Parameter("fromId"), and: Parameter("toId")))
-        let parameters = ["fromId": fromId, "toId": toId] as [String: Any?]
-
         return .init() { promise in
-            connection.execute(query: query, parameters: parameters) { result in
-                guard let rows = result.asRows else { return promise.reject(DatabaseManagerError.failedGetChatMessages) }
-                
-                let messages = try? rows.map { dic -> ChatMessageData in
-                    guard let messageId = dic["messageId"] as? Int32,
-                          let userId = dic["userId"] as? Int32,
-                          let text = dic["text"] as? String
-                    else { throw DatabaseManagerError.chatMessageDecodeError }
+            self.serialQueue.async {
+                let schema = Chat()
+                let query = Select(from: schema).where(schema.messageId.between(Parameter("fromId"), and: Parameter("toId")))
+                let parameters = ["fromId": fromId, "toId": toId] as [String: Any?]
 
-                    return ChatMessageData(messageId: Int(messageId), userId: UserId(userId), text: text)
+                self.connection.execute(query: query, parameters: parameters) { result in
+                    guard let rows = result.asRows else { return promise.reject(DatabaseManagerError.failedGetChatMessages) }
+                    
+                    let messages = try? rows.map { dic -> ChatMessageData in
+                        guard let messageId = dic["messageId"] as? Int32,
+                              let userId = dic["userId"] as? Int32,
+                              let text = dic["text"] as? String
+                        else { throw DatabaseManagerError.chatMessageDecodeError }
+
+                        return ChatMessageData(messageId: Int(messageId), userId: UserId(userId), text: text)
+                    }
+                    
+                    if let messages = messages {
+                        promise.fulfill(messages)
+                    } else {
+                        promise.reject(DatabaseManagerError.failedGetChatMessages)
+                    }
                 }
+            }
+        }
+    }
+}
+
+extension DatabaseManager {
+    func getNumberOfStoredMessages() -> Promise<Int> {
+        return .init() { promise in
+            self.serialQueue.async {
+                let query = "SELECT COUNT(messageId) FROM CHAT"
                 
-                if let messages = messages {
-                    promise.fulfill(messages)
-                } else {
-                    promise.reject(DatabaseManagerError.failedGetChatMessages)
+                self.connection.execute(query) { result in
+                    guard
+                        let row = result.asRows?.first,
+                        let count = row.first?.value as? Int32
+                        else { fatalError("Failed to get number of stored messages") }
+                    promise.fulfill(Int(count))
                 }
             }
         }
@@ -227,7 +264,8 @@ extension DatabaseManager: ChatDatabase {
 extension DatabaseManager {
     func createChatTable() {
         let createTableQuery = "CREATE TABLE CHAT(messageId integer PRIMARY KEY, userId integer, text text)"
-        connection.execute(createTableQuery) { queryResult in
+        
+        self.connection.execute(createTableQuery) { queryResult in
             if let error = queryResult.asError {
                 fatalError("Failed to create CHAT table: \(error)")
             }
