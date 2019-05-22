@@ -31,4 +31,5 @@ protocol ChatDatabase: class {
     func store(chatMessageData: ChatMessageData) -> Promise<ChatMessageData>
     func messages(fromId: Int, toId: Int) -> Promise<[ChatMessageData]>
     func lastMessages(count: Int) -> Promise<[ChatMessageData]>
+    func lastMessages(fromId: Int) -> Promise<[ChatMessageData]>
 }

@@ -21,6 +21,7 @@ enum ChatMessage: Codable {
     case sendChatMessage(message: String)
     case chatHistoryRequest(fromId: Int, count: Int)
     case chatRecentHistoryRequest(count: Int)
+    case chatHistoryFromIdRequest(fromId: Int)
     
     case chatMessage(message: ChatMessageData)
     case chatError(error: String)
@@ -45,6 +46,7 @@ extension ChatMessage {
         case sendChatMessage
         case chatHistoryRequest
         case chatRecentHistoryRequest
+        case chatHistoryFromIdRequest
         case chatMessage
         case chatError
         case chatHistoryResponse
@@ -73,6 +75,7 @@ extension ChatMessage {
         case .sendChatMessage:          self = try .sendChatMessage(message: dec())
         case .chatHistoryRequest:       self = try .chatHistoryRequest(fromId: dec(.fromId), count: dec(.count))
         case .chatRecentHistoryRequest: self = try .chatRecentHistoryRequest(count: dec())
+        case .chatHistoryFromIdRequest: self = try .chatHistoryFromIdRequest(fromId: dec())
         case .chatMessage:              self = try .chatMessage(message: dec())
         case .chatError:                self = try .chatError(error: dec())
         case .chatHistoryResponse:      self = try .chatHistoryResponse(messages: dec())
@@ -92,6 +95,8 @@ extension ChatMessage {
             try nestedContainter.encode(count, forKey: .count)
         case .chatRecentHistoryRequest(let count):
             try container.encode(count, forKey: .chatRecentHistoryRequest)
+        case .chatHistoryFromIdRequest(let fromId):
+            try container.encode(fromId, forKey: .chatHistoryFromIdRequest)
         case .chatMessage(let message):
             try container.encode(message, forKey: .chatMessage)
         case .chatError(let error):

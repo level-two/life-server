@@ -252,6 +252,16 @@ extension DatabaseManager: ChatDatabase {
         
         return messages(fromId: fromId, toId: lastMessageId)
     }
+    
+    
+    public func lastMessages(fromId: Int) -> Promise<[ChatMessageData]> {
+        var lastMessageId = -1
+        self.serialQueue.sync {
+            lastMessageId = numberOfStoredMessages-1
+        }
+        
+        return messages(fromId: fromId, toId: lastMessageId)
+    }
 }
 
 extension DatabaseManager {

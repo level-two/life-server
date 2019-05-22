@@ -69,6 +69,19 @@ extension Chat {
                 interactor.sendMessage.onNext((connectionId, .chatHistoryError(error: $0.localizedDescription)))
             }
         }.disposed(by: disposeBag)
+        
+        interactor.onMessage.bind { [weak self] connectionId, message in
+            guard let self = self else { return }
+            guard case .chatHistoryFromIdRequest(let fromId) = message else { return }
+            
+            firstly {
+                self.chatDatabase.lastMessages(fromId: fromId)
+            }.map {
+                interactor.broadcastMessage.onNext(.chatHistoryResponse(messages: $0))
+            }.catch {
+                interactor.sendMessage.onNext((connectionId, .chatHistoryError(error: $0.localizedDescription)))
+            }
+            }.disposed(by: disposeBag)
 
         return interactor
     }
