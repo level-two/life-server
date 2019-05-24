@@ -22,6 +22,7 @@ import RxCocoa
 extension Gameplay {
     public class Interactor {
         let onMessage = PublishSubject<(ConnectionId, GameplayMessage)>()
+        let sendMessage = PublishSubject<(ConnectionId, GameplayMessage)>()
         let broadcastMessage = PublishSubject<GameplayMessage>()
     }
 
@@ -35,6 +36,19 @@ extension Gameplay {
             if self.place(cell, for: cycle) {
                 interactor.broadcastMessage.onNext(.placeCell(cell: cell, gameCycle: cycle))
             }
+        }.disposed(by: disposeBag)
+        
+        interactor.onMessage.bind { [weak self] connectionId, message in
+            guard let self = self else { return }
+            guard case .requestGameField = message else { return }
+            
+            interactor.sendMessage.onNext((
+                connectionId,
+                .gameField(cells: self.gameField.allCells,
+                           fieldWidth: self.gameField.width,
+                           fieldHeight: self.gameField.height,
+                           gameCycle: self.cycle)
+                ))
         }.disposed(by: disposeBag)
         
         onNewCycle

@@ -20,7 +20,7 @@ import Foundation
 class GameField {
     public var acceptedCells: [Cell]
     public var unacceptedCells: [Cell]
-    public var gameField: GameFieldArray
+    public var gameFieldArray: GameFieldArray
     
     var prevUnacceptedCells: [Cell]
     var prevGameField: GameFieldArray
@@ -28,13 +28,17 @@ class GameField {
     public let width: Int
     public let height: Int
     
+    public var allCells: [Cell] {
+        return gameFieldArray.allCells
+    }
+    
     public init(_ width: Int, _ height: Int) {
         self.width               = width
         self.height              = height
         self.acceptedCells       = []
         self.unacceptedCells     = []
         self.prevUnacceptedCells = []
-        self.gameField           = GameFieldArray(width, height)
+        self.gameFieldArray      = GameFieldArray(width, height)
         self.prevGameField       = GameFieldArray(width, height)
     }
     
@@ -57,13 +61,13 @@ class GameField {
         removeCurrentlyPlacedCellsIfConflicts()
         
         // Bake accepted cells to the game field
-        acceptedCells.forEach(gameField.put)
+        acceptedCells.forEach(gameFieldArray.put)
         
         // Move current unaccepted cells to previous
         prevUnacceptedCells = unacceptedCells
         
         // Move current game filed to the previous
-        prevGameField = gameField
+        prevGameField = gameFieldArray
         
         // Clear current accepted and unaccepted cells
         acceptedCells   = []
@@ -74,7 +78,7 @@ class GameField {
     }
     
     public func canPlaceCell(_ cell: Cell) -> Bool {
-        return gameField.isEmpty(at: cell.pos)
+        return gameFieldArray.isEmpty(at: cell.pos)
             && acceptedCells.allSatisfy{$0.pos != cell.pos}
             && unacceptedCells.allSatisfy{$0.pos != cell.pos}
     }
@@ -115,30 +119,30 @@ class GameField {
     }
     
     public func calcCurrentGameField() {
-        gameField = GameFieldArray(with: prevGameField)
-        prevUnacceptedCells.forEach(gameField.put)
+        gameFieldArray = GameFieldArray(with: prevGameField)
+        prevUnacceptedCells.forEach(gameFieldArray.put)
         
         // TODO: Add life
         func getNeighbors(_ x: Int, _ y: Int) -> [Cell] {
             return [
-                gameField[x-1, y-1],
-                gameField[x-1, y  ],
-                gameField[x-1, y+1],
-                gameField[x  , y-1],
-                gameField[x  , y+1],
-                gameField[x+1, y-1],
-                gameField[x+1, y  ],
-                gameField[x+1, y+1]
+                gameFieldArray[x-1, y-1],
+                gameFieldArray[x-1, y  ],
+                gameFieldArray[x-1, y+1],
+                gameFieldArray[x  , y-1],
+                gameFieldArray[x  , y+1],
+                gameFieldArray[x+1, y-1],
+                gameFieldArray[x+1, y  ],
+                gameFieldArray[x+1, y+1]
                 ].compactMap{$0}
         }
         
         var cellsToPut = [Cell]()
         var cellsToRemove = [Cell]()
         
-        for x in 0..<gameField.width {
-            for y in 0..<gameField.height {
+        for x in 0..<gameFieldArray.width {
+            for y in 0..<gameFieldArray.height {
                 let neighbors = getNeighbors(x, y)
-                let cell = gameField[x,y]
+                let cell = gameFieldArray[x,y]
                 
                 // give birth if there are min two cells of the same user
                 if cell == nil && neighbors.count == 3 {
@@ -156,12 +160,12 @@ class GameField {
             }
         }
         
-        cellsToPut.forEach(gameField.put)
-        cellsToRemove.forEach{gameField[$0.pos] = nil}
+        cellsToPut.forEach(gameFieldArray.put)
+        cellsToRemove.forEach{gameFieldArray[$0.pos] = nil}
     }
     
     public func removeCurrentlyPlacedCellsIfConflicts() {
-        acceptedCells.removeAll { self.gameField.isEmpty(at: $0.pos) == false }
-        unacceptedCells.removeAll { self.gameField.isEmpty(at: $0.pos) == false }
+        acceptedCells.removeAll { self.gameFieldArray.isEmpty(at: $0.pos) == false }
+        unacceptedCells.removeAll { self.gameFieldArray.isEmpty(at: $0.pos) == false }
     }
 }

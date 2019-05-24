@@ -18,21 +18,24 @@
 import Foundation
 
 class GameFieldArray {
-    private var gameField: [[Cell?]]
-    public let width: Int
-    public let height: Int
+    let width: Int
+    let height: Int
     
-    public init(_ width: Int, _ height: Int) {
+    var allCells: [Cell] {
+        return gameField.reduce([], +).compactMap{$0}
+    }
+    
+    init(_ width: Int, _ height: Int) {
         self.width = width
         self.height = height
         gameField = .init(repeating: .init(repeating: nil, count: height), count: width)
     }
     
-    public init(with gameFieldArray: GameFieldArray) {
+    init(with gameFieldArray: GameFieldArray) {
         self.width = gameFieldArray.width
         self.height = gameFieldArray.height
         gameField = .init(repeating: .init(repeating: nil, count: height), count: width)
-        gameFieldArray.allCells().forEach(self.put)
+        gameFieldArray.allCells.forEach(self.put)
     }
     
     subscript(x: Int, y: Int) -> Cell? {
@@ -57,11 +60,6 @@ class GameFieldArray {
         self[cell.pos] = cell
     }
     
-    func allCells() -> [Cell] {
-        return gameField.reduce([], +).compactMap{$0}
-    }
-    
-    
     private func indicesFromCyclic(_ x: Int, _ y: Int) -> (Int, Int) {
         var ix = x % width
         var iy = y % height
@@ -77,4 +75,6 @@ class GameFieldArray {
     private func indicesFromCyclic(_ pos: (x: Int, y: Int)) -> (Int, Int) {
         return indicesFromCyclic(pos.x, pos.y)
     }
+    
+    private var gameField: [[Cell?]]
 }

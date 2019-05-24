@@ -21,6 +21,8 @@ import RxCocoa
 
 class Gameplay {
     let onNewCycle = PublishSubject<Int>()
+    let gameField: GameField
+    var cycle = 0
     
     init(fieldWidth: Int, fieldHeight: Int, updatePeriod: TimeInterval) {
         self.gameField = GameField(fieldWidth, fieldHeight)
@@ -49,6 +51,4 @@ class Gameplay {
     }
     
     fileprivate var updateTimer: Timer?
-    fileprivate let gameField: GameField
-    fileprivate var cycle = 0
 }

@@ -20,17 +20,25 @@ import Foundation
 enum GameplayMessage: Codable {
     case placeCell(cell: Cell, gameCycle: Int)
     case newGameCycle(gameCycle: Int)
+    
+    case requestGameField
+    case gameField(cells: [Cell], fieldWidth: Int, fieldHeight: Int, gameCycle: Int)
 }
 
 extension GameplayMessage {
     private enum CodingKeys: String, CodingKey {
         case placeCell
         case newGameCycle
+        case requestGameField
+        case gameField
     }
 
     private enum AuxCodingKeys: String, CodingKey {
         case cell
+        case cells
         case gameCycle
+        case fieldWidth
+        case fieldHeight
     }
 
     private enum DecodeError: Error {
@@ -47,6 +55,8 @@ extension GameplayMessage {
         switch key {
         case .placeCell: self = try .placeCell(cell: dec(.cell), gameCycle: dec(.gameCycle))
         case .newGameCycle: self = try .newGameCycle(gameCycle: dec())
+        case .requestGameField: self = .requestGameField
+        case .gameField: self = try .gameField(cells: dec(.cells), fieldWidth: dec(.fieldWidth), fieldHeight: dec(.fieldHeight), gameCycle: dec(.gameCycle))
         }
     }
 
@@ -60,6 +70,14 @@ extension GameplayMessage {
             try nestedContainter.encode(gameCycle, forKey: .gameCycle)
         case .newGameCycle(let gameCycle):
             try container.encode(gameCycle, forKey: .newGameCycle)
+        case .requestGameField:
+            ()
+        case .gameField(let cells, let fieldWidth, let fieldHeight, let gameCycle):
+            var nestedContainter = container.nestedContainer(keyedBy: AuxCodingKeys.self, forKey: .gameField)
+            try nestedContainter.encode(cells, forKey: .cells)
+            try nestedContainter.encode(fieldWidth, forKey: .fieldWidth)
+            try nestedContainter.encode(fieldHeight, forKey: .fieldHeight)
+            try nestedContainter.encode(gameCycle, forKey: .gameCycle)
         }
     }
 }

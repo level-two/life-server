@@ -72,12 +72,17 @@ extension LifeServerCore {
             .map { ($0, try JSONEncoder().encode($1)) }
             .bind(onNext: server.send)
             .disposed(by: disposeBag)
-
+        
         gameplayInteractor.broadcastMessage
             .map { try JSONEncoder().encode($0) }
             .bind { [weak self] data in
                 self?.sessionManager.connectionsForLoggedUsers?.forEach { self?.server.send(for: $0, data) }
             }.disposed(by: disposeBag)
+        
+        gameplayInteractor.sendMessage
+            .map { ($0, try JSONEncoder().encode($1)) }
+            .bind(onNext: server.send)
+            .disposed(by: disposeBag)
 
         chatInteractor.sendMessage
             .map { ($0, try JSONEncoder().encode($1)) }
