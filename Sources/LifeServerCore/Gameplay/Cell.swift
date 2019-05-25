@@ -19,7 +19,7 @@ import Foundation
 
 struct Cell: Codable {
     var pos: (x: Int, y: Int)
-    var userId: UserId
+    var color: Color
 }
 
 extension Cell {
@@ -27,13 +27,13 @@ extension Cell {
         var container = try decoder.unkeyedContainer()
         pos.x = try container.decode(Int.self)
         pos.y = try container.decode(Int.self)
-        userId = try container.decode(UserId.self)
+        color = try container.decode(Color.self)
     }
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.unkeyedContainer()
         try container.encode(Int(pos.x))
         try container.encode(Int(pos.y))
-        try container.encode(Int(userId))
+        try container.encode(color)
     }
 }

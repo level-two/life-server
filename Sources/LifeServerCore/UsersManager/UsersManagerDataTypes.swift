@@ -25,11 +25,11 @@ struct UserData: Codable {
     var color: Color
 }
 
-struct Color: Codable {
+struct Color: Hashable {
     let red, green, blue, alpha: Double
 }
 
-extension Color {
+extension Color: Codable {
     public init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         let r = try container.decode(Int.self)

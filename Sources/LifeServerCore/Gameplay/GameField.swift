@@ -146,9 +146,9 @@ class GameField {
                 
                 // give birth if there are min two cells of the same user
                 if cell == nil && neighbors.count == 3 {
-                    let midCell = neighbors.sorted{$0.userId < $1.userId}[1]
-                    if (neighbors.filter{$0.userId == midCell.userId}).count >= 2 {
-                        let newCell = Cell(pos: (x:x, y:y), userId: midCell.userId)
+                    let midCell = neighbors.sorted {$0.color.hashValue < $1.color.hashValue}[1]
+                    if (neighbors.filter {$0.color.hashValue == midCell.color.hashValue}).count >= 2 {
+                        let newCell = Cell(pos: (x:x, y:y), color: midCell.color)
                         cellsToPut.append(newCell)
                     }
                 }
